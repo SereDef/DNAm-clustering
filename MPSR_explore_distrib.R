@@ -2,6 +2,7 @@
 setwd("~/GENR3/Methylation")
 
 library(maotai)
+library(mcclust)
 
 # list.files("./GENR_EPICMETH_Norm")
 
@@ -11,6 +12,11 @@ message("Loading files...")
 load("./GENR_450KMETH_Norm_Release3/GENR_450KMETH_Release3_Betas_ALL_9y_20190813.RData")
 
 # str(x)
+
+# TODO: remove X, Y chromosomes and control probes (annot files )
+# TODO: handle missing values 
+# TODO: parallelize within 
+# TODO: run centiles in parallel with slurm tasks 
 
 # ==============================================================================
 # Simple distribution exploration 
@@ -114,7 +120,8 @@ load("./GENR_450KMETH_Norm_Release3/GENR_450KMETH_Release3_Betas_ALL_9y_20190813
 # plot mean value against the range 
 
 # ==============================================================================
-# EP-means
+# EP-means clustering
+# ==============================================================================
 
 # transform data to list of vectors
 # does not handle missing data (TMP)
@@ -132,39 +139,75 @@ clean_metad <- metad[names(df_compl), ]
 # does not handle missing data (TMP)
 # df_compl <- df[, colSums(is.na(df))== 0]
 
-epi_epmeas <- function(df, n_components = 9, title="", 
-                       plotting_dims =c(3,3), 
+epi_epmeas <- function(df, k_values = 2:10, 
+                       title="", 
+                       output_folder=getwd(),
                        colors = c("red", "pink", "gold", 
                                  "blue", "lightblue", "darkgreen",
-                                 "purple", "grey","brown")
+                                 "purple", "grey","brown","orange")
                        ) {
-  # Todo check df is complete (TMP)
-  message("Estimating k-means clustering ...")
-  k = maotai::epmeans(df, k=n_components) 
+  # TODO: check df is complete (TMP)
   
-  pdf(paste0('~/MPSR/centiles5/epmeans',n_components,'_cent_',title,'.pdf'))
+  message("STEP 1: Estimating k...")
   
-  par(mfrow=plotting_dims)
+  # Partition into random sub-samples w/ replacement (for quicker estimates)
+  set.seed(3108)
+  n_subsamples <- 100
+  subsamples <- lapply(1:n_subsamples, function(i) sample(df, length(df), replace = TRUE))
+  
+  # Run EP-means on each subsample for a range of k values
+  clustering_results <- lapply(k_values, function(k) {
+    lapply(subsamples, function(subsample) maotai::epmeans(subsample, k=k)$cluster)
+  })
+  
+  # Calculate VI metric for each pair of clusterings
+  vi_values <- sapply(clustering_results, function(clusters_k) {
+    utils::combn(length(clusters_k), 2, function(index_pair) {
+      mcclust::vi.dist(clusters_k[[index_pair[1]]], clusters_k[[index_pair[2]]])
+    })
+  })
+  
+  # Assess Stability Across Different k Values:
+  # compute average VI value across all pairs, for each k
+  avg_vi_values <- sapply(vi_values, mean)
+  
+  #  k with the lowest average VI indicates the most stable clustering
+  optimal_k <- k_values[which.min(avg_vi_values)]
+  
+  message("STEP 2: Estimating, ", optimal_k, "cluters...")
+  final_clusters = maotai::epmeans(df, k=optimal_k) 
   
   message("\nPlotting distributions per cluster ...")
-  for (g in 1:n_components) {
+  pdf(file.path(output_folder, paste0('clust_cent_',title,'_k_',optimal_k,'.pdf')))
+  
+  # Plotting param (fix later)
+  if (optimal_k < 4) { plotting_dims <- c(1, optimal_k)
+  } else if (optimal_k < 7) { plotting_dims <- c(2, ceiling(optimal_k/2))
+  } else if (optimal_k < 10) { plotting_dims <- c(3, 3)
+  } else { plotting_dims <- c(4, 4) }
+  
+  message("\nPlotting distributions per cluster ...")
+  for (g in 1:optimal_k) {
     
     plot.new()
-    plot.window(xlim=c(-0.1,1.1), ylim = c(0,60))
+    plot.window(xlim=c(-0.1, 1.1), ylim = c(0, 70)) #TODO: smart upper limit
     
-    grp <- df[, which(k$cluster == g)]
+    grp <- df[, which(final_clusters$cluster == g)]
     
     group_desc <- paste0("Group ", g, " (n = ", ncol(grp), ")")
     message(group_desc)
     
+    # Draw individual CpGs
     apply(grp, 2, function(x) {
       rng <- range(x)
       lines(stats::density(x, bw="SJ", from = rng[1], to = rng[2]), 
-            col=scales::alpha(colors[g],0.2), lw=0.5)}
+            col=scales::alpha(colors[g], 0.2), lw=0.5)}
     )
-    lines(stats::density(stats::knots(k$centers[[g]])), 
-          col="black", lw=1.5)
+    # Draw centroids 
+    lines(stats::density(stats::knots(final_clusters$centers[[g]])), 
+          col="black", lw=1.2)
     
+    # Add ticks
     axis(1, at = seq(0, 1, 0.1))
     title(main=group_desc, xlab = "Methylation", ylab="Density")
   }
@@ -172,12 +215,16 @@ epi_epmeas <- function(df, n_components = 9, title="",
   dev.off()
   
   # Save output
-  write.csv(k$cluster, paste0('DNAm_kmeans',title,'.csv'))
-  return(k$cluster)
+  write.csv(final_clusters$cluster, 
+            file.path(output_folder, paste0('clust_cent_',title,'_k_',optimal_k,'.csv')))
+  return(final_clusters$cluster)
+
 }
 
-# split into centiles of variable ranges
-centiles <- quantile(clean_metad$vrange, seq(0,1,0.05)) 
+# Split into centiles of variable ranges
+centiles <- quantile(clean_metad$vrange, seq(0, 1, 0.05)) 
+
+# TODO: run centiles in parallel with slurm tasks 
 
 lapply(c(1:(length(centiles)-1)), function(c) {
   
@@ -189,33 +236,14 @@ lapply(c(1:(length(centiles)-1)), function(c) {
           round(centiles[c],2), " and ", round(centiles[c+1],2), 
           ". (n=",ncol(df_compl_ci),")")
   
-  k_ci <- epi_epmeas(df_compl_ci, 
-                     n_components = 8,
-                     plotting_dims = c(2,4),
+  k_ci <- epi_epmeas(df_compl_ci, k_values = 2:10, 
+                     output_folder="~/MPSR/clustering",
                      title=paste(substr(
                        names(centiles)[c], 1, nchar(names(centiles)[c])-1), sep='_'))
   
 })
 
-# df_compl_95 <- df_compl[, clean_metad$vrange > centiles["95%"]]
-# message("> 95th centile - Size:", ncol(df_compl_95))
-# k_95 = maotai::epmeans(df_compl_95, k=9)
-# 
-# k_95 <- epi_epmeas(df_compl_95, title="_90th")
-# 
-# df_compl_45.50 <- df_compl[, (clean_metad$vrange > centiles["45%"]) &
-#                              (clean_metad$vrange < centiles["50%"])]
-# 
-# df_compl_90 <- df_compl[, clean_metad$vrange > centiles["90%"]]
-# message("> 90th centile - Size:", ncol(df_compl_90))
-# k_90 <- epi_epmeas(df_compl_90, title="_90th")
-# 
-# 
-# df_compl_10 <- df_compl[, clean_metad$vrange < centiles["10%"]]
-# message("< 10th centile - Size:", ncol(df_compl_10))
-# k_10 <- epi_epmeas(df_compl_10, title="_10th")
-
-
+# ==============================================================================
 
 # median split - not enough ----------------------------------------------------
 # df_compl_narrow <- df_compl[, clean_metad$vrange < 0.17] # median
@@ -228,4 +256,5 @@ lapply(c(1:(length(centiles)-1)), function(c) {
 # message("Everything...")
 # k_all <- epi_epmeas(df_compl)
 
-# ===============================================================
+# ==============================================================================
+# END
