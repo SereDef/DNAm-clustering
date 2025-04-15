@@ -3,6 +3,7 @@
 #SBATCH --job-name=expdist
 #SBATCH --output=bycentiles5
 #SBATCH --mem=5GB
+#SBATCH --cpus-per-task=8
 #SBATCH --mail-type=END,FAIL
 
 
