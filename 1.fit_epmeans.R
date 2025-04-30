@@ -2,7 +2,9 @@
 timepoint <- "birth"
 array <- "450K"
 
-output_folder <- "~/MPSR/"
+input_folder <- "~/MPSR/"
+output_folder <- paste0("~/MPSR/",timepoint,"_",array,"_results")
+dir.create(output_folder, showWarnings = FALSE)
 
 install.packages("maotai", repos = "http://cran.us.r-project.org")
 
@@ -17,10 +19,10 @@ library(mcclust)
 # ==============================================================================
 
 message("Loading files...")
-clean_metad <- read.csv(file.path(output_folder, paste0("distrib_metad_",array,"_",timepoint,".csv")),
+clean_metad <- read.csv(file.path(input_folder, paste0("distrib_metad_",array,"_",timepoint,".csv")),
                   row.names = 1)
 
-load(file.path(output_folder, paste0("data_filtered_",array,"_",timepoint,".RData")))
+load(file.path(input_folder, paste0("data_filtered_",array,"_",timepoint,".RData")))
 
 epi_epmeas <- function(df, k_values = 2:10, 
                        title="", 
@@ -139,7 +141,7 @@ results <- parallel::mclapply(
           ". (n=",ncol(df_compl_ci),")")
   
   k_ci <- epi_epmeas(df_compl_ci, k_values = 2:10, 
-                     output_folder="~/MPSR/clustering_results",
+                     output_folder=output_folder,
                      title=paste(substr(
                        names(centiles)[centile], 1, nchar(names(centiles)[centile])-1), sep='_'))
   }, 
