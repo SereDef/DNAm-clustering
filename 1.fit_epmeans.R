@@ -6,13 +6,12 @@ input_folder <- "~/MPSR/"
 output_folder <- paste0("~/MPSR/",timepoint,"_",array,"_results")
 dir.create(output_folder, showWarnings = FALSE)
 
-install.packages("maotai", repos = "http://cran.us.r-project.org")
+# install.packages("maotai", repos = "http://cran.us.r-project.org")
 
 library(maotai)
 library(mcclust)
 
-# TODO: remove X, Y chromosomes and control probes (annot files )
-# TODO: handle missing values 
+# TODO: handle missing values ? for now these are excluded
 
 # ==============================================================================
 # EP-means clustering
@@ -60,22 +59,24 @@ epi_epmeas <- function(df, k_values = 2:10,
   # compute average VI value across all pairs, for each k
   avg_vi_values <- colMeans(vi_values) # sapply(vi_values, mean)
   
-  message(avg_vi_values)
+  message(paste(round(avg_vi_values,2), collapse=', '))
   
   #  k with the lowest average VI indicates the most stable clustering
   optimal_k <- k_values[which.max(round(avg_vi_values))]
   
-  message("STEP 2: Estimating, ", optimal_k, "cluters...")
+  message("STEP 2: Estimating ", optimal_k, " cluters...")
   final_clusters = maotai::epmeans(df, k=optimal_k) 
   
   message("\nPlotting distributions per cluster ...")
-  pdf(file.path(output_folder, paste0('clust_cent_',title,'_k_',optimal_k,'.pdf')))
+  pdf(file.path(output_folder, paste0(title,'_k',optimal_k,'.pdf')))
   
   # Plotting param (fix later)
   if (optimal_k < 4) { plotting_dims <- c(1, optimal_k)
   } else if (optimal_k < 7) { plotting_dims <- c(2, ceiling(optimal_k/2))
   } else if (optimal_k < 10) { plotting_dims <- c(3, 3)
   } else { plotting_dims <- c(4, 4) }
+  
+  # par(mfrow=plotting_dims)
   
   message("\nPlotting distributions per cluster ...")
   for (g in 1:optimal_k) {
@@ -105,14 +106,21 @@ epi_epmeas <- function(df, k_values = 2:10,
   
   dev.off()
   
+  clusters <- cbind(names(df), final_clusters$cluster)
+  names(clusters) <- c('cpg','cluster')
+  
+  centroids <- final_clusters$centers
+  
   # Save output
-  write.csv(final_clusters$cluster, 
-            file.path(output_folder, paste0('clust_cent_',title,'_k_',optimal_k,'.csv')))
+  write.csv(clusters, 
+            file.path(output_folder, paste0(title,'_k',optimal_k,'.csv')))
   write.csv(avg_vi_values, 
-            file.path(output_folder, paste0('clust_cent_',title,'_k_tuning.csv')))
+            file.path(output_folder, paste0(title,'_tuning.csv')))
+  save(centroids, 
+       file = file.path(output_folder, paste0(title,'_centroids.RData')))
   
   # final_clusters$avg_vi_values <- avg_vi_values
-  return(final_clusters$cluster)
+  return(final_clusters)
 
 }
 
@@ -140,10 +148,13 @@ results <- parallel::mclapply(
           round(centiles[centile],2), " and ", round(centiles[centile+1],2), 
           ". (n=",ncol(df_compl_ci),")")
   
-  k_ci <- epi_epmeas(df_compl_ci, k_values = 2:10, 
+  group_name = paste0('range-cent', 
+                      # remove the % from centile name (for more stable file names)
+                      substr(names(centiles)[1], 1, nchar(names(centiles)[1])-1))
+  
+  k_ci <- epi_epmeas(df_compl_ci, k_values = 2:15, 
                      output_folder=output_folder,
-                     title=paste(substr(
-                       names(centiles)[centile], 1, nchar(names(centiles)[centile])-1), sep='_'))
+                     title=group_name)
   }, 
   mc.cores = n_cores)
 

@@ -2,9 +2,44 @@ timepoint <- "birth"
 array <- "450K"
 
 setwd("~/GENR3/Methylation")
+message('Loading methylation data...')
 load(paste0("./GENR_",array,"METH_Norm_Release3/GENR_",array,"METH_Release3_Betas_ALL_",timepoint,"_20190813.RData"))
 
 output_folder <- "~/MPSR/"
+
+# ==============================================================================
+# Remove X, Y chromosomes and control probes (from annot files )
+
+BiocManager::install("IlluminaHumanMethylation450kanno.ilmn12.hg19")
+
+library(IlluminaHumanMethylation450kanno.ilmn12.hg19) # Chromosome annotation
+
+# load annotation data
+data(list = "IlluminaHumanMethylation450kanno.ilmn12.hg19")
+data(Locations)
+data(Other)
+annotation <- cbind(as.data.frame(Locations), as.data.frame(Other))
+
+XY_chr_probes = rownames(annotation)[annotation$chr %in% c('chrX', 'chrY')]
+
+other_chr_probes = rownames(annotation)[!annotation$chr %in% c('chrX', 'chrY')]
+rm(annotation, Locations, Other)
+
+message("Removing X and Y chromosomes...")
+dim(x)
+x <- x[!rownames(x) %in% XY_chr_probes, ]
+dim(x)
+x <- x[!rownames(x) %in% other_chr_probes, ]
+
+## load cross-reactive probes from the max probes dataset for both 450k and epic
+# library(maxprobes)
+# xloci_EPIC <- unique(unlist(maxprobes::xreactive_probes(array_type = "EPIC")))
+# xloci_450K <- unique(maxprobes::xreactive_probes(array_type = "450K"))
+# xloci <- unique(c(xloci_EPIC, xloci_450K))
+# 
+# ## remove from keep the cross-reactive probes
+# keep <- keep[!(keep %in% xloci)]
+
 
 # ==============================================================================
 # Simple distribution exploration 
@@ -34,6 +69,7 @@ output_folder <- "~/MPSR/"
 
 library(moments)
 
+message('Computing metadata...')
 # Range ------------------------------------------------------------------------
 vrange <- apply(x, 1, function(v) diff(range(v, na.rm=TRUE)))
 summary(vrange)
@@ -105,9 +141,14 @@ row.names(metad) <- row.names(x)
 rm(vrange, vskew, vkurt, vmeans)
 
 message("Transforming dataframe...")
+
+cat(dim(x))
 # transform data to list of vectors
-# does not handle missing data (TMP)
-df_compl <- as.data.frame(t(x[rowSums(is.na(x))==0, ]))
+# ---> does not handle missing data (TMP: removing it)
+df_compl <- as.data.frame(t(x[rowSums(is.na(x))==0,]))
+
+cat(dim(df_compl))
+
 rm(x)
 
 save(df_compl, file=file.path(output_folder, paste0("data_filtered_",array,"_",timepoint,".RData")))
