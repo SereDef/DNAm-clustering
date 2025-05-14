@@ -3,7 +3,8 @@ timepoint <- "birth"
 array <- "450K"
 
 input_folder <- "~/MPSR/"
-output_folder <- paste0("~/MPSR/",timepoint,"_",array,"_results")
+output_folder <- paste0("~/MPSR/",timepoint,"_",array,"_results_",
+                        format(Sys.Date(), "%d%m%y")) # Date
 dir.create(output_folder, showWarnings = FALSE)
 
 # install.packages("maotai", repos = "http://cran.us.r-project.org")
@@ -150,7 +151,8 @@ results <- parallel::mclapply(
   
   group_name = paste0('range-cent', 
                       # remove the % from centile name (for more stable file names)
-                      substr(names(centiles)[1], 1, nchar(names(centiles)[1])-1))
+                      substr(names(centiles)[centile], 
+                             1, nchar(names(centiles)[centile])-1))
   
   k_ci <- epi_epmeas(df_compl_ci, k_values = 2:15, 
                      output_folder=output_folder,
