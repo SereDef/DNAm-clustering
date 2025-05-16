@@ -5,6 +5,9 @@ array <- "450K"
 input_folder <- "~/MPSR/"
 output_folder <- paste0("~/MPSR/",timepoint,"_",array,"_results_",
                         format(Sys.Date(), "%d%m%y")) # Date
+
+elbow_method <- "round_max-1" # "round_max"
+
 dir.create(output_folder, showWarnings = FALSE)
 
 # install.packages("maotai", repos = "http://cran.us.r-project.org")
@@ -27,11 +30,16 @@ load(file.path(input_folder, paste0("data_filtered_",array,"_",timepoint,".RData
 epi_epmeas <- function(df, k_values = 2:10, 
                        title="", 
                        output_folder=getwd(),
+                       elbow="round_max",
                        colors = c("red", "pink", "gold", 
                                  "blue", "lightblue", "darkgreen",
-                                 "purple", "grey","brown","orange")
+                                 "purple", "grey","brown",
+                                 "orange","lightgreen","darkblue",
+                                 "yellow", "cyan", "magenta")
                        ) {
   # TODO: check df is complete (TMP)
+  
+  stopifnot(elbow %in% c("round_max", "round_max-1"))
   
   message("STEP 1: Estimating k...")
   
@@ -63,7 +71,11 @@ epi_epmeas <- function(df, k_values = 2:10,
   message(paste(round(avg_vi_values,2), collapse=', '))
   
   #  k with the lowest average VI indicates the most stable clustering
-  optimal_k <- k_values[which.max(round(avg_vi_values))]
+  if (elbow == "round_max") {
+    optimal_k <- k_values[which.max(round(avg_vi_values))]
+  } else if (elbow == "round_max-1") {
+    optimal_k <- k_values[which.max(round(x[1:which.max(round(x))-1]))]
+  }
   
   message("STEP 2: Estimating ", optimal_k, " cluters...")
   final_clusters = maotai::epmeans(df, k=optimal_k) 
@@ -132,10 +144,6 @@ centiles <- quantile(clean_metad$vrange, seq(0, 1, 0.05))
 library(parallel)
 n_cores <- as.integer(Sys.getenv("SLURM_CPUS_PER_TASK", unset = 1))
 
-# cl <- makeCluster(n_cores) # Create a cluster
-# Export needed variables/functions
-# clusterExport(cl, c("df_compl", "clean_metad", "centiles", "epi_epmeas"))
-
 results <- parallel::mclapply(
   1:(length(centiles)-1), 
   function(centile) {
@@ -156,9 +164,8 @@ results <- parallel::mclapply(
   
   k_ci <- epi_epmeas(df_compl_ci, k_values = 2:15, 
                      output_folder=output_folder,
+                     elbow=elbow_method,
                      title=group_name)
   }, 
   mc.cores = n_cores)
-
-# stopCluster(cl)
 

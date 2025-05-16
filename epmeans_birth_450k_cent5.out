@@ -1,0 +1,734 @@
+**-----------------------------------------------------------------**
+** maotai
+**  - Tools for Matrix Algebra, Optimization and Inference Problems
+**
+** Version    : 0.2.6      (2025)
+** Maintainer : Kisung You (kisung.you@outlook.com)
+** Website    : https://www.kisungyou.com/maotai
+**
+** Please share any bugs or suggestions to the maintainer.
+**-----------------------------------------------------------------**
+Loading required package: lpSolve
+Loading files...
+Subsetting centile...
+Subsetting centile...
+Data between 0% and 5% centiles of variable ranges, aka between 0.01 and 0.07. (n=20511)
+STEP 1: Estimating k...
+Subsetting centile...
+Testing k == 2
+Data between 5% and 10% centiles of variable ranges, aka between 0.07 and 0.09. (n=20511)
+STEP 1: Estimating k...
+Subsetting centile...
+Data between 10% and 15% centiles of variable ranges, aka between 0.09 and 0.12. (n=20512)
+STEP 1: Estimating k...
+Testing k == 2
+Testing k == 2
+Data between 15% and 20% centiles of variable ranges, aka between 0.12 and 0.13. (n=20511)
+STEP 1: Estimating k...
+Subsetting centile...
+Testing k == 2
+Subsetting centile...
+Data between 20% and 25% centiles of variable ranges, aka between 0.13 and 0.15. (n=20511)
+STEP 1: Estimating k...
+Testing k == 2
+Subsetting centile...
+Data between 25% and 30% centiles of variable ranges, aka between 0.15 and 0.16. (n=20511)
+STEP 1: Estimating k...
+Subsetting centile...
+Data between 30% and 35% centiles of variable ranges, aka between 0.16 and 0.17. (n=20511)
+STEP 1: Estimating k...
+Testing k == 2
+Data between 35% and 40% centiles of variable ranges, aka between 0.17 and 0.19. (n=20512)
+STEP 1: Estimating k...
+Testing k == 2
+Testing k == 2
+Testing k == 3
+Testing k == 3
+Testing k == 3
+Testing k == 3
+Testing k == 3
+Testing k == 3
+Testing k == 3
+Testing k == 3
+Testing k == 4
+Testing k == 4
+Testing k == 4
+Testing k == 4
+Testing k == 4
+Testing k == 4
+Testing k == 4
+Testing k == 4
+Testing k == 5
+Testing k == 5
+Testing k == 5
+Testing k == 5
+Testing k == 5
+Testing k == 5
+Testing k == 5
+Testing k == 5
+Testing k == 6
+Testing k == 6
+Testing k == 6
+Testing k == 6
+Testing k == 6
+Testing k == 6
+Testing k == 6
+Testing k == 6
+Testing k == 7
+Testing k == 7
+Testing k == 7
+Testing k == 7
+Testing k == 7
+Testing k == 7
+Testing k == 7
+Testing k == 7
+Testing k == 8
+Testing k == 8
+Testing k == 8
+Testing k == 8
+Testing k == 8
+Testing k == 8
+Testing k == 8
+Testing k == 8
+Testing k == 9
+Testing k == 9
+Testing k == 9
+Testing k == 9
+Testing k == 9
+Testing k == 9
+Testing k == 9
+Testing k == 9
+Testing k == 10
+Testing k == 10
+Testing k == 10
+Testing k == 10
+Testing k == 10
+Testing k == 10
+Testing k == 10
+Testing k == 10
+Testing k == 11
+Testing k == 11
+Testing k == 11
+Testing k == 11
+Testing k == 11
+Testing k == 11
+Testing k == 11
+Testing k == 11
+Testing k == 12
+Testing k == 12
+Testing k == 12
+Testing k == 12
+Testing k == 12
+Testing k == 12
+Testing k == 12
+Testing k == 12
+Testing k == 13
+Testing k == 13
+Testing k == 13
+Testing k == 13
+Testing k == 13
+Testing k == 13
+Testing k == 13
+Testing k == 13
+Testing k == 14
+Testing k == 14
+Testing k == 14
+Testing k == 14
+Testing k == 14
+Testing k == 14
+Testing k == 14
+Testing k == 14
+Testing k == 15
+Testing k == 15
+Testing k == 15
+Testing k == 15
+Testing k == 15
+Testing k == 15
+Testing k == 15
+Testing k == 15
+Calculate VI metric...
+Calculate VI metric...
+Calculate VI metric...
+0.64, 2.25, 3.29, 4.07, 4.64, 5.11, 5.58, 5.94, 6.26, 6.5, 6.77, 7, 7.19, 7.41
+STEP 2: Estimating 12 cluters...
+Calculate VI metric...
+1.96, 2.73, 3.3, 3.88, 4.39, 4.77, 5.19, 5.49, 5.78, 6.1, 6.35, 6.57, 6.84, 7.04
+STEP 2: Estimating 13 cluters...
+1.99, 2.78, 3.36, 3.87, 4.37, 4.77, 5.09, 5.5, 5.82, 6.05, 6.31, 6.57, 6.81, 7
+STEP 2: Estimating 13 cluters...
+1.94, 2.62, 3.28, 3.81, 4.31, 4.76, 5.19, 5.5, 5.85, 6.07, 6.35, 6.56, 6.81, 7
+STEP 2: Estimating 13 cluters...
+Calculate VI metric...
+
+Plotting distributions per cluster ...
+
+Plotting distributions per cluster ...
+Group 1 (n = 1985)
+Group 2 (n = 1196)
+Group 3 (n = 2044)
+Group 4 (n = 1925)
+Group 5 (n = 1407)
+Group 6 (n = 1638)
+Group 7 (n = 2194)
+Group 8 (n = 2267)
+Group 9 (n = 2526)
+
+Plotting distributions per cluster ...
+
+Plotting distributions per cluster ...
+Group 1 (n = 2206)
+Group 10 (n = 1310)
+Group 2 (n = 3447)
+Group 11 (n = 445)
+Group 12 (n = 1574)
+Subsetting centile...
+Data between 40% and 45% centiles of variable ranges, aka between 0.19 and 0.2. (n=20511)
+STEP 1: Estimating k...
+Testing k == 2
+Group 3 (n = 1131)
+Group 4 (n = 660)
+Group 5 (n = 257)
+Group 6 (n = 656)
+Group 7 (n = 1732)
+Group 8 (n = 1404)
+Group 9 (n = 1861)
+Group 10 (n = 2765)
+Group 11 (n = 132)
+Group 12 (n = 2087)
+
+Plotting distributions per cluster ...
+
+Plotting distributions per cluster ...
+Group 13 (n = 2173)
+Group 1 (n = 2370)
+1.92, 2.5, 3.21, 3.86, 4.34, 4.83, 5.21, 5.47, 5.8, 6.13, 6.36, 6.6, 6.82, 7.01
+STEP 2: Estimating 13 cluters...
+Subsetting centile...
+Data between 65% and 70% centiles of variable ranges, aka between 0.26 and 0.28. (n=20511)
+STEP 1: Estimating k...
+Testing k == 2
+Group 2 (n = 2472)
+
+Plotting distributions per cluster ...
+
+Plotting distributions per cluster ...
+Group 1 (n = 1858)
+Group 2 (n = 423)
+Group 3 (n = 3067)
+Group 4 (n = 3283)
+Group 5 (n = 1755)
+Group 3 (n = 699)
+Group 6 (n = 233)
+Group 7 (n = 2032)
+Group 4 (n = 502)
+Group 5 (n = 1748)
+Group 8 (n = 1746)
+Group 6 (n = 1983)
+Group 9 (n = 1367)
+Group 7 (n = 2323)
+Group 10 (n = 763)
+Group 11 (n = 2043)
+Group 8 (n = 118)
+Group 12 (n = 591)
+Group 9 (n = 2175)
+Group 13 (n = 1350)
+Subsetting centile...
+Data between 70% and 75% centiles of variable ranges, aka between 0.28 and 0.3. (n=20511)
+STEP 1: Estimating k...
+Testing k == 2
+Group 10 (n = 812)
+Group 11 (n = 3049)
+Group 12 (n = 928)
+Group 13 (n = 1332)
+Subsetting centile...
+Data between 60% and 65% centiles of variable ranges, aka between 0.24 and 0.26. (n=20512)
+STEP 1: Estimating k...
+Testing k == 2
+
+Plotting distributions per cluster ...
+
+Plotting distributions per cluster ...
+Group 1 (n = 1984)
+Group 2 (n = 2057)
+Group 3 (n = 2848)
+Group 4 (n = 1338)
+Group 5 (n = 3301)
+Group 6 (n = 2010)
+Group 7 (n = 119)
+Group 8 (n = 776)
+Group 9 (n = 239)
+Group 10 (n = 3013)
+Group 11 (n = 1527)
+Group 12 (n = 549)
+Group 13 (n = 751)
+Subsetting centile...
+Data between 75% and 80% centiles of variable ranges, aka between 0.3 and 0.33. (n=20511)
+STEP 1: Estimating k...
+Testing k == 2
+Calculate VI metric...
+1.99, 2.96, 3.53, 4.01, 4.51, 4.93, 5.27, 5.59, 5.89, 6.19, 6.39, 6.65, 6.87, 7.06
+STEP 2: Estimating 13 cluters...
+Calculate VI metric...
+1.74, 3.01, 3.79, 4.37, 4.83, 5.2, 5.56, 5.86, 6.15, 6.43, 6.63, 6.88, 7.07, 7.26
+STEP 2: Estimating 12 cluters...
+
+Plotting distributions per cluster ...
+
+Plotting distributions per cluster ...
+Group 1 (n = 1586)
+Group 2 (n = 981)
+Group 3 (n = 4122)
+Group 4 (n = 63)
+Group 5 (n = 1345)
+Group 6 (n = 1446)
+Group 7 (n = 484)
+Group 8 (n = 1369)
+Group 9 (n = 1841)
+Group 10 (n = 1492)
+Group 11 (n = 873)
+Group 12 (n = 2012)
+Group 13 (n = 2897)
+Subsetting centile...
+Data between 55% and 60% centiles of variable ranges, aka between 0.23 and 0.24. (n=20511)
+STEP 1: Estimating k...
+Testing k == 2
+Calculate VI metric...
+
+Plotting distributions per cluster ...
+
+Plotting distributions per cluster ...
+Group 1 (n = 1061)
+Group 2 (n = 2741)
+Group 3 (n = 2603)
+Group 4 (n = 2766)
+Group 5 (n = 1840)
+Group 6 (n = 231)
+Group 7 (n = 23)
+Group 8 (n = 1589)
+1.17, 2.62, 3.61, 4.31, 4.86, 5.34, 5.72, 6.01, 6.3, 6.55, 6.76, 6.96, 7.17, 7.33
+STEP 2: Estimating 11 cluters...
+Group 9 (n = 976)
+Group 10 (n = 1319)
+Group 11 (n = 3147)
+Group 12 (n = 2216)
+Subsetting centile...
+Data between 50% and 55% centiles of variable ranges, aka between 0.21 and 0.23. (n=20511)
+STEP 1: Estimating k...
+Testing k == 2
+
+Plotting distributions per cluster ...
+
+Plotting distributions per cluster ...
+Group 1 (n = 2249)
+Group 2 (n = 2194)
+Group 3 (n = 2181)
+Group 4 (n = 1103)
+Group 5 (n = 2084)
+Group 6 (n = 2021)
+Group 7 (n = 1506)
+Group 8 (n = 2016)
+Group 9 (n = 2270)
+Group 10 (n = 2426)
+Group 11 (n = 461)
+Subsetting centile...
+Data between 45% and 50% centiles of variable ranges, aka between 0.2 and 0.21. (n=20511)
+STEP 1: Estimating k...
+Testing k == 2
+Testing k == 3
+Testing k == 3
+Testing k == 3
+Testing k == 3
+Testing k == 3
+Testing k == 3
+Testing k == 3
+Testing k == 3
+Testing k == 4
+Testing k == 4
+Testing k == 4
+Testing k == 4
+Testing k == 4
+Testing k == 4
+Testing k == 4
+Testing k == 4
+Testing k == 5
+Testing k == 5
+Testing k == 5
+Testing k == 5
+Testing k == 5
+Testing k == 5
+Testing k == 5
+Testing k == 5
+Testing k == 6
+Testing k == 6
+Testing k == 6
+Testing k == 6
+Testing k == 6
+Testing k == 6
+Testing k == 6
+Testing k == 6
+Testing k == 7
+Testing k == 7
+Testing k == 7
+Testing k == 7
+Testing k == 7
+Testing k == 7
+Testing k == 7
+Testing k == 7
+Testing k == 8
+Testing k == 8
+Testing k == 8
+Testing k == 8
+Testing k == 8
+Testing k == 8
+Testing k == 8
+Testing k == 8
+Testing k == 9
+Testing k == 9
+Testing k == 9
+Testing k == 9
+Testing k == 9
+Testing k == 9
+Testing k == 9
+Testing k == 9
+Testing k == 10
+Testing k == 10
+Testing k == 10
+Testing k == 10
+Testing k == 10
+Testing k == 10
+Testing k == 10
+Testing k == 10
+Testing k == 11
+Testing k == 11
+Testing k == 11
+Testing k == 11
+Testing k == 11
+Testing k == 11
+Testing k == 11
+Testing k == 11
+Testing k == 12
+Testing k == 12
+Testing k == 12
+Testing k == 12
+Testing k == 12
+Testing k == 12
+Testing k == 12
+Testing k == 12
+Testing k == 13
+Testing k == 13
+Testing k == 13
+Testing k == 13
+Testing k == 13
+Testing k == 13
+Testing k == 13
+Testing k == 13
+Testing k == 14
+Testing k == 14
+Testing k == 14
+Testing k == 14
+Testing k == 14
+Testing k == 14
+Testing k == 14
+Testing k == 14
+Testing k == 15
+Testing k == 15
+Testing k == 15
+Testing k == 15
+Testing k == 15
+Testing k == 15
+Testing k == 15
+Testing k == 15
+Calculate VI metric...
+1.9, 2.53, 3.3, 3.89, 4.41, 4.84, 5.24, 5.57, 5.85, 6.17, 6.43, 6.63, 6.83, 7.08
+STEP 2: Estimating 13 cluters...
+Calculate VI metric...
+
+Plotting distributions per cluster ...
+
+Plotting distributions per cluster ...
+Group 1 (n = 406)
+Group 2 (n = 177)
+Group 3 (n = 612)
+Group 4 (n = 2137)
+Group 5 (n = 1227)
+Calculate VI metric...
+Group 6 (n = 2254)
+Group 7 (n = 666)
+Group 8 (n = 2151)
+Group 9 (n = 1850)
+1.85, 2.76, 3.49, 4.15, 4.68, 5.13, 5.5, 5.88, 6.14, 6.43, 6.65, 6.88, 7.09, 7.28
+STEP 2: Estimating 12 cluters...
+Group 10 (n = 2248)
+Group 11 (n = 2545)
+Group 12 (n = 1287)
+Group 13 (n = 2951)
+Subsetting centile...
+Data between 80% and 85% centiles of variable ranges, aka between 0.33 and 0.37. (n=20511)
+STEP 1: Estimating k...
+Testing k == 2
+1.83, 2.68, 3.49, 4.09, 4.6, 5.08, 5.44, 5.78, 6.08, 6.35, 6.61, 6.83, 7.03, 7.22
+STEP 2: Estimating 12 cluters...
+Calculate VI metric...
+1.88, 2.83, 3.63, 4.26, 4.78, 5.24, 5.59, 5.95, 6.23, 6.51, 6.72, 6.94, 7.14, 7.34
+STEP 2: Estimating 11 cluters...
+
+Plotting distributions per cluster ...
+
+Plotting distributions per cluster ...
+Group 1 (n = 536)
+Group 2 (n = 1703)
+Group 3 (n = 2343)
+Group 4 (n = 905)
+Group 5 (n = 2000)
+Group 6 (n = 1270)
+Group 7 (n = 2260)
+Group 8 (n = 3150)
+Group 9 (n = 622)
+Group 10 (n = 1936)
+
+Plotting distributions per cluster ...
+
+Plotting distributions per cluster ...
+Group 1 (n = 414)
+Group 2 (n = 2540)
+Group 11 (n = 2739)
+Group 3 (n = 872)
+Group 12 (n = 1047)
+Group 4 (n = 1030)
+Group 5 (n = 1189)
+Group 6 (n = 3037)
+Group 7 (n = 568)
+Group 8 (n = 2064)
+Group 9 (n = 2416)
+Group 10 (n = 2680)
+Group 11 (n = 1983)
+Group 12 (n = 1719)
+Calculate VI metric...
+1.92, 2.92, 3.75, 4.39, 4.89, 5.35, 5.69, 6.01, 6.32, 6.58, 6.85, 7.02, 7.22, 7.42
+STEP 2: Estimating 11 cluters...
+
+Plotting distributions per cluster ...
+
+Plotting distributions per cluster ...
+Group 1 (n = 1643)
+Group 2 (n = 2640)
+Group 3 (n = 1756)
+Group 4 (n = 2593)
+Group 5 (n = 801)
+Group 6 (n = 1297)
+Group 7 (n = 2906)
+Group 8 (n = 888)
+Group 9 (n = 2782)
+Group 10 (n = 2084)
+Group 11 (n = 1121)
+Calculate VI metric...
+
+Plotting distributions per cluster ...
+
+Plotting distributions per cluster ...
+Group 1 (n = 1038)
+Group 2 (n = 1686)
+1.82, 2.57, 3.35, 4.01, 4.5, 4.97, 5.34, 5.66, 5.97, 6.22, 6.51, 6.74, 6.96, 7.16
+STEP 2: Estimating 12 cluters...
+Group 3 (n = 2685)
+Group 4 (n = 1649)
+Group 5 (n = 2176)
+Group 6 (n = 2163)
+Group 7 (n = 1409)
+Group 8 (n = 1817)
+Group 9 (n = 1071)
+Group 10 (n = 2673)
+Group 11 (n = 2144)
+Calculate VI metric...
+1.81, 2.62, 3.45, 4.08, 4.58, 5, 5.39, 5.7, 6.03, 6.3, 6.56, 6.78, 7, 7.15
+STEP 2: Estimating 12 cluters...
+Calculate VI metric...
+1.86, 2.54, 3.34, 4, 4.48, 4.92, 5.26, 5.65, 5.91, 6.23, 6.46, 6.7, 6.91, 7.11
+STEP 2: Estimating 13 cluters...
+
+Plotting distributions per cluster ...
+
+Plotting distributions per cluster ...
+Group 1 (n = 757)
+Group 2 (n = 911)
+Group 3 (n = 2684)
+Group 4 (n = 479)
+Group 5 (n = 245)
+Group 6 (n = 3815)
+Group 7 (n = 1918)
+Group 8 (n = 1936)
+Group 9 (n = 2230)
+Group 10 (n = 1743)
+Group 11 (n = 1528)
+Group 12 (n = 2265)
+Subsetting centile...
+Data between 90% and 95% centiles of variable ranges, aka between 0.41 and 0.48. (n=20511)
+STEP 1: Estimating k...
+Testing k == 2
+
+Plotting distributions per cluster ...
+
+Plotting distributions per cluster ...
+Group 1 (n = 2204)
+Group 2 (n = 2112)
+Group 3 (n = 1073)
+Group 4 (n = 559)
+Group 5 (n = 2835)
+Group 6 (n = 2106)
+Group 7 (n = 1086)
+Group 8 (n = 534)
+Group 9 (n = 2491)
+Group 10 (n = 436)
+Group 11 (n = 2545)
+Group 12 (n = 2530)
+Subsetting centile...
+Data between 95% and 100% centiles of variable ranges, aka between 0.48 and 1. (n=20511)
+STEP 1: Estimating k...
+Testing k == 2
+
+Plotting distributions per cluster ...
+
+Plotting distributions per cluster ...
+Group 1 (n = 2143)
+Group 2 (n = 2254)
+Group 3 (n = 2516)
+Group 4 (n = 697)
+Group 5 (n = 1813)
+Group 6 (n = 2053)
+Group 7 (n = 2136)
+Group 8 (n = 3198)
+Group 9 (n = 1428)
+Group 10 (n = 207)
+Group 11 (n = 562)
+Group 12 (n = 306)
+Group 13 (n = 1198)
+Subsetting centile...
+Data between 85% and 90% centiles of variable ranges, aka between 0.37 and 0.41. (n=20512)
+STEP 1: Estimating k...
+Testing k == 2
+Testing k == 3
+Testing k == 3
+Testing k == 3
+Testing k == 3
+Testing k == 4
+Testing k == 4
+Testing k == 4
+Testing k == 4
+Testing k == 5
+Testing k == 5
+Testing k == 5
+Testing k == 5
+Testing k == 6
+Testing k == 6
+Testing k == 6
+Testing k == 6
+Testing k == 7
+Testing k == 7
+Testing k == 7
+Testing k == 7
+Testing k == 8
+Testing k == 8
+Testing k == 8
+Testing k == 8
+Testing k == 9
+Testing k == 9
+Testing k == 9
+Testing k == 9
+Testing k == 10
+Testing k == 10
+Testing k == 10
+Testing k == 10
+Testing k == 11
+Testing k == 11
+Testing k == 11
+Testing k == 11
+Testing k == 12
+Testing k == 12
+Testing k == 12
+Testing k == 12
+Testing k == 13
+Testing k == 13
+Testing k == 13
+Testing k == 13
+Testing k == 14
+Testing k == 14
+Testing k == 14
+Testing k == 14
+Testing k == 15
+Testing k == 15
+Testing k == 15
+Testing k == 15
+Calculate VI metric...
+1.92, 3.02, 3.83, 4.47, 4.99, 5.4, 5.75, 6.1, 6.4, 6.66, 6.87, 7.09, 7.28, 7.45
+STEP 2: Estimating 11 cluters...
+
+Plotting distributions per cluster ...
+
+Plotting distributions per cluster ...
+Group 1 (n = 1857)
+Group 2 (n = 2325)
+Group 3 (n = 1801)
+Group 4 (n = 1285)
+Group 5 (n = 2505)
+Group 6 (n = 1696)
+Group 7 (n = 2471)
+Group 8 (n = 1343)
+Group 9 (n = 1822)
+Group 10 (n = 1819)
+Group 11 (n = 1587)
+Calculate VI metric...
+1.93, 3.06, 3.86, 4.5, 5.01, 5.45, 5.82, 6.11, 6.41, 6.68, 6.88, 7.12, 7.28, 7.45
+STEP 2: Estimating 11 cluters...
+Calculate VI metric...
+
+Plotting distributions per cluster ...
+
+Plotting distributions per cluster ...
+Group 1 (n = 2633)
+1.98, 3.13, 3.94, 4.55, 5.05, 5.49, 5.85, 6.17, 6.44, 6.69, 6.92, 7.11, 7.33, 7.49
+STEP 2: Estimating 11 cluters...
+Group 2 (n = 1476)
+Group 3 (n = 1984)
+Group 4 (n = 1322)
+Group 5 (n = 1550)
+Group 6 (n = 1546)
+Group 7 (n = 1800)
+Group 8 (n = 1864)
+Group 9 (n = 1893)
+Group 10 (n = 2266)
+Group 11 (n = 2178)
+
+Plotting distributions per cluster ...
+
+Plotting distributions per cluster ...
+Group 1 (n = 2060)
+Group 2 (n = 2028)
+Group 3 (n = 1496)
+Group 4 (n = 2376)
+Group 5 (n = 1475)
+Group 6 (n = 2125)
+Group 7 (n = 1615)
+Group 8 (n = 1588)
+Group 9 (n = 1981)
+Group 10 (n = 1717)
+Group 11 (n = 2050)
+Calculate VI metric...
+1.99, 3.13, 3.94, 4.51, 5, 5.37, 5.69, 5.99, 6.27, 6.52, 6.73, 6.92, 7.12, 7.28
+STEP 2: Estimating 11 cluters...
+
+Plotting distributions per cluster ...
+
+Plotting distributions per cluster ...
+Group 1 (n = 2697)
+Group 2 (n = 3739)
+Group 3 (n = 1525)
+Group 4 (n = 1129)
+Group 5 (n = 3417)
+Group 6 (n = 877)
+Group 7 (n = 516)
+Group 8 (n = 839)
+Group 9 (n = 3318)
+Group 10 (n = 567)
+Group 11 (n = 1887)
+Error: unexpected ',' in "                    1,"
+Execution halted
