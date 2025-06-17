@@ -5,6 +5,8 @@ comparison <- args[1]
 
 comparison <- match.arg(comparison, c('within_centile', 'across_centiles'))
 
+min_association_count <- 50 # Do not look at traits that are associated with < than n CpGs
+
 clust_results_path <- './birth_450K_5cent_15maxk'
 functional_utils_path <- './../funct_analysis'
 
@@ -95,14 +97,14 @@ clust_data <- clust_data[!duplicated(cpg_trait),]
 # This mostly for dimensionality reduction
 traits <- sort(table(clust_data$Trait), decreasing = TRUE)
 
-rare_associations <- traits[traits < 100]
+rare_associations <- traits[traits < min_association_count]
 
 message('Removing ', length(rare_associations), ' single CpG - trait associations.')
 
 clust_data <- clust_data[!(clust_data$Trait %in% names(rare_associations)),]
 
-message(length(table(clust_data$Trait)), ' traits to examine.')
-
+traits <- sort(table(clust_data$Trait), decreasing = TRUE)
+message(length(traits), ' traits to examine.')
 
 # Analysis =====================================================================
 
@@ -115,7 +117,7 @@ result_list <- parallel::mclapply(
   names(traits),
   function(trait) {
     
-    message('\n', trait)
+    message(trait)
     
     trait_result_list <- lapply(centiles, function(cent_i) {
       
@@ -139,12 +141,11 @@ result_list <- parallel::mclapply(
       # Run Fisher test for each k group in the centile
       cent_result_list <- lapply(sort(groups), function(group_k) {
         
-        # Confusion matrix -- making sure reference is constant
-        ct <- table(relevel(as.factor(ifelse(cent_i_df$cent_clust == group_k, 
-                                             group_k, reference)), ref = reference), 
-                    
-                    relevel(as.factor(ifelse(cent_i_df$Trait == trait, 
-                                             'Yes', 'No')),  ref = 'No'))
+        # Confusion matrix -- making sure reference is constant & matrix structure is 2x2
+        ct <- table(factor(ifelse(cent_i_df$cent_clust == group_k, group_k, reference),
+                           levels = c(reference, group_k)), 
+                    factor(ifelse(cent_i_df$Trait == trait,'Yes', 'No'),
+                           levels = c('No','Yes')))
         
         tryCatch({
           fisher_test <- stats::fisher.test(ct)
