@@ -199,7 +199,8 @@ results <- do.call(rbind, result_list)
 results$p_fdr <- p.adjust(p = results$p_value, method = "fdr")
 
 
-write.csv(results, file.path(dirname(clust_results_path), 
-                             paste0('ewatcatalog_analysis_', comparison, '.csv')), 
-          row.names=FALSE) 
+write.csv(results, 
+          file = file.path(dirname(clust_results_path),
+                           paste0('ewatcatalog_analysis_', comparison, '.csv')), 
+          row.names=FALSE)
 
