@@ -76,7 +76,7 @@ clust_data$Trait[clust_data$Trait %in% c('Early spontaneous preterm birth',
 
 
 traits <- sort(table(clust_data$Trait), decreasing = TRUE)
-cat(length(traits), 'unique CpG - trait associations.')
+message(length(traits), 'unique CpG - trait associations.')
 
 # Cleaning helpers
 # traits[1:50] # check most popular associations
@@ -87,7 +87,7 @@ cat(length(traits), 'unique CpG - trait associations.')
 
 # Duplicated CpGs - trait associations -----------------------------------------
 cpg_trait <- paste0(clust_data$CpG, clust_data$Trait)
-cat('Removing ', sum(duplicated(cpg_trait)), ' duplicate associations')
+message('Removing ', sum(duplicated(cpg_trait)), ' duplicate associations')
 
 clust_data <- clust_data[!duplicated(cpg_trait),]
 
@@ -97,11 +97,11 @@ traits <- sort(table(clust_data$Trait), decreasing = TRUE)
 
 rare_associations <- traits[traits < 100]
 
-cat('Removing ', length(rare_associations), ' single CpG - trait associations.')
+message('Removing ', length(rare_associations), ' single CpG - trait associations.')
 
 clust_data <- clust_data[!(clust_data$Trait %in% names(rare_associations)),]
 
-cat(length(table(clust_data$Trait)), ' traits to examine.')
+message(length(table(clust_data$Trait)), ' traits to examine.')
 
 
 # Analysis =====================================================================
@@ -114,6 +114,8 @@ n_cores <- as.integer(Sys.getenv("SLURM_CPUS_PER_TASK", unset = 1))
 result_list <- parallel::mclapply(
   names(traits),
   function(trait) {
+    
+    message('\n', trait)
     
     trait_result_list <- lapply(centiles, function(cent_i) {
       
@@ -135,7 +137,7 @@ result_list <- parallel::mclapply(
       }
       
       # Run Fisher test for each k group in the centile
-      cent_result_list <- lapply(groups, function(group_k) {
+      cent_result_list <- lapply(sort(groups), function(group_k) {
         
         # Confusion matrix -- making sure reference is constant
         ct <- table(relevel(as.factor(ifelse(cent_i_df$cent_clust == group_k, 
@@ -144,9 +146,10 @@ result_list <- parallel::mclapply(
                     relevel(as.factor(ifelse(cent_i_df$Trait == trait, 
                                              'Yes', 'No')),  ref = 'No'))
         
-        fisher_test <- stats::fisher.test(ct)
-        
-        group_result <- data.frame(group = group_k,
+        tryCatch({
+          fisher_test <- stats::fisher.test(ct)
+          
+          group_result <- data.frame(group = group_k,
                                    comparison = reference,
                                    trait = trait,
                                    estimate = fisher_test$estimate,
@@ -157,7 +160,21 @@ result_list <- parallel::mclapply(
                                    n_no_group = ct[group_k, 'No'],
                                    n_yes_other = ct[reference, 'Yes'],
                                    n_no_other = ct[reference, 'No'])
-        
+        }, error = function(e) {
+          message(e$message)
+          group_result <- data.frame(group = group_k,
+                                     comparison = reference,
+                                     trait = trait,
+                                     estimate = NA,
+                                     CI_lower = NA,
+                                     CI_upper = NA,
+                                     p_value = NA,
+                                     n_yes_group = ct[group_k, 'Yes'],
+                                     n_no_group = ct[group_k, 'No'],
+                                     n_yes_other = ct[reference, 'Yes'],
+                                     n_no_other = ct[reference, 'No'])
+        })
+        # cat('.')
         return(group_result)
       })
   
