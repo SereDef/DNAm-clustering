@@ -1,9 +1,10 @@
-6203unique CpG - trait associations.
-6203unique CpG - trait associations.
-Removing 392348 duplicate associations
-Removing 392348 duplicate associations
+============== EWAS catalog - functional analysis ==============
+================================================================
+6203 unique CpG - trait associations.
+Removing 392348 duplicate associations.
 Removing 5266 single CpG - trait associations.
 937 traits to examine.
+
 Age
 Tissue
 Gestational age
@@ -14,14 +15,6 @@ HIV infection
 Fetal vs adult liver
 Incident COPD
 Smoking
-Removing 5266 single CpG - trait associations.
-937 traits to examine.
-Age
-Tissue
-Gestational age
-Sex
-HIV infection
-Rheumatoid arthritis
 Fetal vs adult liver
 Clear cell renal carcinoma
 Incident COPD
@@ -1882,5 +1875,3 @@ C9 protein levels (SeqId = 3060-43)
 GRB10 protein levels (SeqId = 11358-15)
 PGLS protein levels (SeqId = 17799-9)
 SPOCK1 protein levels (SeqId = 5490-53)
-Error: unexpected ')' in " '.csv')"
-Execution halted
