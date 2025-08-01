@@ -1,15 +1,23 @@
+
+options(startup.messages = FALSE) # avoid Loading package messages on each worker
+
+# Install if needed
+# install.packages(c("bigmemory", "foreach", "future", "doFuture", "doRNG", "progressr"))
+# BiocManager::install("sva")
+
+library(doRNG)
+# Note: I will use '%dorng%' from the 'doRNG' package instead of '%dopar%'. 
+# This ensures that proper, parallel-safe random numbers are produced.
+
+# =================================== CONFIG ===================================
+
+args <- commandArgs(trailingOnly = TRUE)
+array <- args[1] # 450K or EPIC
+
 dataset <- "GENR"
-array <- "450K" # "EPIC", "450K"
 timepoint <- "birth"
 normalization <- "funcnorm"
 
-# Install if needed
-# install.packages(c("bigmemory", "foreach", "future", "doFuture", "progressr"))
-# BiocManager::install("sva")
-
-library(foreach)
-
-# =================================== CONFIG ===================================
 use_library = '/home/s.defina/R/x86_64-pc-linux-gnu-library/4.4'
 .libPaths(use_library)
 
@@ -20,11 +28,17 @@ methyl_file <- paste(dataset, array, timepoint, normalization, sep = "_")
 plates_file <- paste(dataset, array, timepoint, "plates", sep = "_")
 
 n_cores <- as.numeric(Sys.getenv("SLURM_CPUS_PER_TASK", unset = "1"))
-chunk_size <- 1000 # ceiling(n_probes / n_cores) / 2
+chunk_size <- 1055 # ceiling(n_probes / n_cores) / 2
 
 # ==============================================================================
+message("\n=====================================================================")
+message("Dataset: ", dataset, 
+        "\nArray: ", array, 
+        "\nTime point: ", timepoint, 
+        "\nNormalization: ", normalization)
+message("=====================================================================")
 
-message('Loading methylation data...')
+message('\nLoading methylation data...')
 x <- bigmemory::attach.big.matrix(file.path(input_dir,
                                             paste0(methyl_file, ".desc")))
 message(' * Original dimentions:')
@@ -62,6 +76,7 @@ table(batch)
 
 # Save descriptors to pass them to parallel workers
 x_desc <- file.path(input_dir, paste0(methyl_file, ".desc"))
+filtered_desc <- file.path(output_dir, paste0(methyl_file, "_filtered.desc"))
 corrected_desc <- file.path(output_dir, paste0(methyl_file, "_clean.desc"))
 
 # Create output big.matrix
@@ -69,22 +84,30 @@ n_probes <- length(cpgs_to_keep)
 n_samples <- ncol(x)
 
 # Clean up previous matrices if necessary
-if (file.exists(corrected_desc)) {
-  warning(' * "', corrected_desc, '" already exists, removing it.')
-  file.remove(corrected_desc)
-  file.remove(gsub('.desc', '.bin', corrected_desc))
+remove_and_generate <- function(desc) {
+  
+  if (file.exists(desc)) {
+    warning(' * "', desc, '" already exists, removing it.')
+    file.remove(desc)
+    file.remove(gsub('.desc', '.bin', desc))
+  }
+  
+  message('Generate output methylation matrix...')
+  new_x <- bigmemory::filebacked.big.matrix(
+    nrow = n_probes,
+    ncol = n_samples,
+    type = "double",
+    backingpath = output_dir,
+    descriptorfile = basename(desc),
+    backingfile = gsub('.desc', '.bin', basename(desc)),
+    dimnames = list(cpgs_to_keep, colnames(x))
+  )
+  
+  return(new_x)
 }
+filtered_x <- remove_and_generate(filtered_desc)
+corrected_x <- remove_and_generate(corrected_desc)
 
-message('Generate output methylation matrix...')
-corrected_x <- bigmemory::filebacked.big.matrix(
-  nrow = n_probes,
-  ncol = n_samples,
-  type = "double",
-  backingpath = output_dir,
-  descriptorfile = paste0(methyl_file, "_clean.desc"),
-  backingfile = paste0(methyl_file, "_clean.bin"),
-  dimnames = list(cpgs_to_keep, colnames(x))
-)
 
 # Chunks of CpGs to process in parallel
 chunk_seq <- split(cpgs_to_keep,
@@ -94,80 +117,92 @@ chunk_seq <- split(cpgs_to_keep,
 RNGkind("L'Ecuyer-CMRG")
 set.seed(123)
 
-# Parallel-safe progress updates
-progressr::handlers(global = TRUE)
-# progressr::handlers("txtprogressbar")
-progressr::handlers(list(
-  bar = progressr::handler_progress(
-    format   = ":current/:total [:bar] :percent in :elapsed",
-    width    = 60, complete = "="),
-  file = progressr::handler_filesize(
-    file = "slurm.progress",
-    intrusiveness = 0)))
+# Parallel-safe progress updates (does not work properly in this SLURM setup)
+# progressr::handlers(global = TRUE)
+# # progressr::handlers("txtprogressbar")
+# progressr::handlers(list(
+#   bar = progressr::handler_progress(
+#     format   = ":current/:total [:bar] :percent in :elapsed",
+#     width    = 60, complete = "="),
+#   file = progressr::handler_filesize(
+#     file = file.path(output_dir, "slurm.progress.0.3"),
+#     intrusiveness = 0)))
 
 message('Running analysis...')
 # Set up parallel backend
 future::plan(future::multisession, workers = n_cores)
 doFuture::registerDoFuture()
 
-progressr::with_progress({
-  p <- progressr::progressor(steps = length(chunk_seq))
+# progressr::with_progress({
+#   p <- progressr::progressor(steps = length(chunk_seq))
   
-  # Run ComBat in parallel
-  foreach(chunk = chunk_seq,
-          .packages = c("bigmemory", "sva"),
-          .export = c("batch", "x_desc", "corrected_desc")) %dopar% {
-            
-          # Note: with future framework I need to re-attach matrices
-          # this adds a little overhead but ensures the memory pointers are not
-          # corrupted -> recommended pipeline on SLURM clusters 
-          x <- attach.big.matrix(x_desc, readonly = TRUE, lockfile = TRUE)
-          corrected_x <- attach.big.matrix(corrected_desc, lockfile = TRUE)
+# Run ComBat in parallel
+foreach::foreach(chunk = chunk_seq,
+                 .packages = c("bigmemory", "sva"),
+                 .export = c("batch", "x_desc", "corrected_desc"),
+                 .combine = 'c') %dorng% {
           
-          adjusted_chunk <- NULL
+        # Note: with future framework I need to re-attach matrices
+        # this adds a little overhead but ensures the memory pointers are not
+        # corrupted -> recommended pipeline on SLURM clusters 
+        x <- bigmemory::attach.big.matrix(x_desc, readonly = TRUE, lockfile = TRUE)
+        filtered_x <- bigmemory::attach.big.matrix(filtered_desc, lockfile = TRUE)
+        corrected_x <- bigmemory::attach.big.matrix(corrected_desc, lockfile = TRUE)
+        
+        adjusted_chunk <- NULL
+        
+        tryCatch({
+          data_chunk <- x[chunk, ]
           
-          tryCatch({
-            data_chunk <- x[chunk, ]
+          filtered_x[chunk, ] <- data_chunk
           
-            # Run ComBat (non-parametric to avoid normality assumption)
-            adjusted_chunk <- suppressMessages(sva::ComBat(dat = data_chunk,
-                                               batch = batch, 
-                                               par.prior = FALSE))
-            
-            
-          }, error = function(e) {
-            message("Chunk failed: ", conditionMessage(e))
-          })
+          # Run ComBat (non-parametric to avoid normality assumption)
+          adjusted_chunk <- suppressWarnings(suppressMessages(
+            sva::ComBat(dat = data_chunk, batch = batch, par.prior = FALSE)))
           
-          if (!is.null(adjusted_chunk)) {
-            # Write corrected values
-            corrected_x[chunk, ] <- adjusted_chunk
-          }
           
-          p(class = "sticky")  # Advance progress bar
-    }
-})
-flush.console()
+        }, error = function(e) {
+          message("Chunk failed: ", conditionMessage(e))
+        })
+        
+        if (!is.null(adjusted_chunk)) {
+          # Write corrected values
+          corrected_x[chunk, ] <- adjusted_chunk
+        }
+        
+        # p()  # Advance progress bar
+        
+        # Suppress result collection
+        invisible(NULL)
+  }
+# })
+# flush.console()
+
+future::plan(future::sequential)
+
+warnings()
 
 # checking ---------------------------------------------------------------------
-# I run this interactively 
-# x <- attach.big.matrix(x_desc, lockfile = TRUE)
-# corrected_x <- attach.big.matrix(corrected_desc, lockfile = TRUE)
-# 
-# dim(x)
-# dim(corrected_x)
-# 
-# random_cpgs <- sample(rownames(corrected_x), 30)
-# 
-# x_subset <- x[random_cpgs, ]
-# corrected_x_subset <- corrected_x[random_cpgs, ]
-# 
-# # Compute correlations row-wise
-# cors <- mapply(function(orig, corr) cor(orig, corr),
-#                split(x_subset, row(x_subset)),
-#                split(corrected_x_subset, row(corrected_x_subset)))
-# 
-# # Name and print results nicely
-# names(cors) <- random_cpgs
-# print(cors)
 
+message('Checking batch correction...')
+dim(x)
+dim(corrected_x)
+
+set.seed(123)
+random_cpgs <- sample(rownames(corrected_x), 1000)
+# Check these are the same 
+print(random_cpgs[1:3])
+
+x_subset <- x[random_cpgs, ]
+corrected_x_subset <- corrected_x[random_cpgs, ]
+
+# Compute correlations row-wise
+cors <- mapply(function(orig, corr) cor(orig, corr, method='spearman'),
+               split(x_subset, row(x_subset)),
+               split(corrected_x_subset, row(corrected_x_subset)))
+
+# Name and print results nicely
+# names(cors) <- random_cpgs
+# print(cors_450K)
+message('Pre-post correction correlations (sample n = 1000):')
+print(summary(cors))

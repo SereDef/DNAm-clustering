@@ -1,13 +1,15 @@
 #!/bin/bash
 
-#SBATCH --job-name=0.3.combat
+#SBATCH --job-name=1.1.moments
 #SBATCH --time=1-00:00:00
-#SBATCH --output=0.3.log
+#SBATCH --output=1.1.log
 # #SBATCH --mem=50GB
 #SBATCH --cpus-per-task=64
 #SBATCH --mail-type=END,FAIL
 #SBATCH --mail-user=s.defina@erasmusmc.nl
 
 # Run the two arrays (sequentially)
-Rscript 0.3.filter_and_batch_correction.R "450K"
-Rscript 0.3.filter_and_batch_correction.R "EPIC"
+Rscript 1.1.extract_distribution_moments.R "450K"
+Rscript 1.1.extract_distribution_moments.R "EPIC"
+
+
