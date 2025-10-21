@@ -54,3 +54,13 @@ writeLines(final_cpgs, "~/MPSR/data/clean_cpg_list.txt")
 # cpgs_to_keep <- setdiff(cpgs_to_keep, setdiff(cpgs_to_keep, rownames(x)))
 # writeLines(cpgs_to_keep, "~/MPSR/data/clean_cpg_list.txt")
 
+# ==============================================================================
+# # Negative control probes
+# mani450k <- minfi::getManifest(IlluminaHumanMethylation450kanno.ilmn12.hg19)
+# maniEPIC <- minfi::getManifest(IlluminaHumanMethylationEPICanno.ilm10b4.hg19)
+
+# # get address of control probes
+# all_control <- minfi::getProbeInfo(mani450k, type='Control')
+# table(all_control$Type)
+# # get only negative controls
+# negative_control <- minfi::getControlAddress(mani450k, controlType='NEGATIVE')

@@ -6,12 +6,18 @@
 library(dplyr)
 library(bigmemory)
 
+outp_path <- '~/MPSR/data/raw'
+outp_path_plate_info <- '~/MPSR/data/plate_info'
+
+dir.create(outp_path, showWarnings = FALSE, recursive = TRUE)
+dir.create(outp_path_plate_info, showWarnings = FALSE, recursive = TRUE)
+
 convert_matrix <- function(mat, 
                            dataset = c('GENR', 'ALSPAC'), 
                            array = c('EPIC','450K'),
                            timepoint = 'birth',
                            normalization = 'funcnorm',
-                           outp_path = '~/MPSR/data') {
+                           outp_path = outp_path) {
   
   dataset <- match.arg(dataset)
   array <- match.arg(array)
@@ -19,7 +25,7 @@ convert_matrix <- function(mat,
   data_name <- paste(dataset, array, timepoint, normalization, sep = "_")
   
   x <- as.big.matrix(mat, 
-                     type = type(mat),
+                     type = typeof(mat),
                      backingpath = outp_path,
                      backingfile = paste0(data_name, ".bin"),
                      descriptorfile = paste0(data_name, ".desc"))
@@ -49,8 +55,9 @@ if (length(unique(plate_info$Sample_ID)) != nrow(plate_info)) stop("Duplicated s
 
 table(plate_info$Sample_Plate)
 
-saveRDS(plate_info, file = '~/MPSR/data/GENR_EPIC_birth_plates.rds')
+saveRDS(plate_info, file = file.path(outp_path_plate_info, 'GENR_EPIC_birth_plates.rds'))
 
+rm(mat)
 # ==============================================================================
 # GENR 450K @birth ~ functionally normalized together with ALSPAC
 
@@ -85,7 +92,7 @@ if (length(unique(plate_info$Sample_ID)) != nrow(plate_info)) stop("Duplicated s
 
 table(plate_info$Sample_Plate)
 
-saveRDS(plate_info, file = '~/MPSR/data/GENR_450K_birth_plates.rds')
+saveRDS(plate_info, file = file.path(outp_path_plate_info, 'GENR_450K_birth_plates.rds'))
 
 # ==============================================================================
 # ALSPAC 450K @birth ~ functionally normalized together with GENR
@@ -106,4 +113,13 @@ convert_matrix(mat = mat,
                timepoint ="birth",
                normalization ="funcnorm")
 
-# How to use plate info??
+plate_info_clean <- plate_info %>%
+  filter(Sample_Name %in% birth_samples) %>%
+  transmute(Sample_ID = as.character(Sample_Name),
+            Sample_Plate = as.factor(as.integer(gsub('\\D', '', BCD_plate))))
+
+if (length(unique(plate_info_clean$Sample_ID)) != nrow(plate_info_clean)) stop("Duplicated samples")
+
+table(plate_info_clean$Sample_Plate)
+
+saveRDS(plate_info_clean, file = file.path(outp_path_plate_info, 'ALSP_450K_birth_plates.rds'))
