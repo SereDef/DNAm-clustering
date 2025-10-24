@@ -7,17 +7,17 @@ library(dplyr)
 library(bigmemory)
 
 outp_path <- '~/MPSR/data/raw'
-outp_path_plate_info <- '~/MPSR/data/plate_info'
+outp_path_plate_info <- file.path(outp_path,'plate_info')
 
-dir.create(outp_path, showWarnings = FALSE, recursive = TRUE)
+# dir.create(outp_path, showWarnings = FALSE, recursive = TRUE)
 dir.create(outp_path_plate_info, showWarnings = FALSE, recursive = TRUE)
 
 convert_matrix <- function(mat, 
-                           dataset = c('GENR', 'ALSPAC'), 
+                           dataset = c('GENR', 'ALSP'), 
                            array = c('EPIC','450K'),
                            timepoint = 'birth',
                            normalization = 'funcnorm',
-                           outp_path = outp_path) {
+                           output_path = outp_path) {
   
   dataset <- match.arg(dataset)
   array <- match.arg(array)
@@ -29,6 +29,7 @@ convert_matrix <- function(mat,
                      backingpath = outp_path,
                      backingfile = paste0(data_name, ".bin"),
                      descriptorfile = paste0(data_name, ".desc"))
+                     # dimnames = list(rownames(mat), colnames(mat))
   invisible(NULL)
 }
 
@@ -52,6 +53,10 @@ plate_info <- haven::read_spss(selection_file, col_select = c('SampleID','Sample
             Sample_Plate = as.factor(Sample_Plate))
 
 if (length(unique(plate_info$Sample_ID)) != nrow(plate_info)) stop("Duplicated samples")
+if (!all(plate_info$Sample_ID == colnames(mat))) stop("Samples need reordering.")
+
+plate_info <- plate_info[match(colnames(mat), plate_info$Sample_ID), ]
+if (!all(plate_info$Sample_ID == colnames(mat))) stop("Samples need reordering.")
 
 table(plate_info$Sample_Plate)
 
@@ -89,6 +94,7 @@ plate_info <- birth_samples %>%
             Sample_Plate = as.factor(as.character(Sample_Plate)))
 
 if (length(unique(plate_info$Sample_ID)) != nrow(plate_info)) stop("Duplicated samples")
+if (!all(plate_info$Sample_ID == colnames(mat))) stop("Samples need reordering.")
 
 table(plate_info$Sample_Plate)
 
@@ -119,6 +125,7 @@ plate_info_clean <- plate_info %>%
             Sample_Plate = as.factor(as.integer(gsub('\\D', '', BCD_plate))))
 
 if (length(unique(plate_info_clean$Sample_ID)) != nrow(plate_info_clean)) stop("Duplicated samples")
+if (!all(plate_info_clean$Sample_ID == colnames(mat))) stop("Samples need reordering.")
 
 table(plate_info_clean$Sample_Plate)
 

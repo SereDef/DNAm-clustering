@@ -62,8 +62,10 @@ moment_diff <-function(moment, data = meta, xlim=c(-1,1)) {
   return(diff)
 }
 plot_moment_diff <- function(){
-  par(mfrow = c(2, 2))
+  par(mfrow = c(2, 3))
   mean_diff <- moment_diff('mean', xlim=c(-1,1))
+  med_diff <- moment_diff('median', xlim=c(-1,1))
+  var_diff <- moment_diff('varaince', xlim=c(-0.2,0.2))
   range_diff <- moment_diff('range', xlim=c(-1,1))
   skew_diff <- moment_diff('skewness', xlim=c(-40,40))
   kurt_diff <- moment_diff('kurtosis', xlim=c(-1000,1000))
@@ -72,7 +74,7 @@ plot_moment_diff <- function(){
 plot_moment_diff()
 
 # Range against mean value
-plot_moments <- function(moment_list = c('mean','range','skewness','kurtosis'),
+plot_moments <- function(moment_list = c('mean','median','varaince','range','skewness','kurtosis'),
                          data = meta){
   # Set layout: 2 rows, 4 columns
   par(mfrow = c(2, length(moment_list)))
