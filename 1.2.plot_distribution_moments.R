@@ -77,3 +77,7 @@ for (m in colnames(meta_filter)) {
   print(summary(meta_ComBat[, m]))
   cat('\n')
 }
+
+colSums(meta_filter[, grep('range', colnames(meta_filter))] > 1)
+
+colSums(meta_ComBat[, grep('range', colnames(meta_filter))] > 1)

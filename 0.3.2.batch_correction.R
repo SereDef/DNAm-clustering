@@ -122,6 +122,9 @@ warnings()
 
 message('Checking batch correction...')
 
+
+# TODO 20K most variable (variance )
+
 set.seed(123)
 random_cpgs <- sample(rownames(xbc), 1000)
 # Check these are the same 
