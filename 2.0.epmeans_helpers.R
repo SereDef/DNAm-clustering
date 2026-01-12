@@ -100,6 +100,9 @@ stability_selection <- function(ecdf_list,
   return(S_k)
 }
 
+# ------------------------------------------------------------------------------
+# Main: fit final EPMEANS model and save output
+# ------------------------------------------------------------------------------
 
 fit_epmeas <- function(ecdf_list, k, centile, output_folder) {
   
@@ -109,7 +112,6 @@ fit_epmeas <- function(ecdf_list, k, centile, output_folder) {
   
   message("Fitting ", k, " cluters to the full sample...")
   final_clusters = maotai::epmeans(ecdf_list, k = k) 
-
   
   clusters <- cbind(names(ecdf_list), final_clusters$cluster)
   
@@ -125,61 +127,10 @@ fit_epmeas <- function(ecdf_list, k, centile, output_folder) {
   
   # Save output
   saveRDS(clusters, 
-          file = file.path(output_folder, paste0(centile_name,'_k',k,'.csv')))
+          file = file.path(output_folder, paste0(centile_name,'_k',k,'.rds')))
 
   saveRDS(centroids, 
           file = file.path(output_folder, paste0(centile_name,'_centroids.rds')))
   
   return(final_clusters)
 }
-
-# plot_clusters <- function(final_clusters, k, centile, output_folder,
-#                           colors = c("red", "pink", "gold", 
-#                                      "blue", "lightblue", "darkgreen",
-#                                      "purple", "grey","brown",
-#                                      "orange","lightgreen","darkblue",
-#                                      "yellow", "cyan", "magenta"){
-#   message("\nPlotting distributions per cluster ...")
-#                             
-#   pdf(file.path(output_folder, paste0('c',centile,'_k',k,'.pdf')))
-#   
-#   # Plotting params
-#   plotting_dims <- switch(
-#     findInterval(k, c(1, 4, 7, 10, 17), rightmost.closed = TRUE),
-#     c(1, k),                     # k < 4
-#     c(2, ceiling(k / 2)),        # 4–6
-#     c(3, 3),                     # 7–9
-#     c(4, 4),                     # 10–16
-#     c(4, 5)                      # 17-20
-#   )
-#   
-#   par(mfrow=plotting_dims)
-#   
-#   message("\nPlotting distributions per cluster ...")
-#   for (g in 1:k) {
-#     
-#     plot.new()
-#     plot.window(xlim=c(-0.1, 1.1), ylim = c(0, 70)) #TODO: smart upper limit
-#     
-#     grp <- df[, which(final_clusters$cluster == g)]
-#     
-#     group_desc <- paste0("Group ", g, " (n = ", ncol(grp), ")")
-#     message(group_desc)
-#     
-#     # Draw individual CpGs
-#     apply(grp, 2, function(x) {
-#       rng <- range(x)
-#       lines(stats::density(x, bw="SJ", from = rng[1], to = rng[2]), 
-#             col=scales::alpha(colors[g], 0.2), lw=0.5)}
-#     )
-#     # Draw centroids 
-#     lines(stats::density(stats::knots(final_clusters$centers[[g]])), 
-#           col="black", lw=1.2)
-#     
-#     # Add ticks
-#     axis(1, at = seq(0, 1, 0.1))
-#     title(main=group_desc, xlab = "Methylation", ylab="Density")
-#   }
-#   
-#   dev.off()
-# }

@@ -77,7 +77,7 @@ if (length(k_hat) > 1) k_hat <- min(k_hat)
 
 # ==============================================================================
 saveRDS(t(k_stability),
-        file = file.path(output_dir, paste0('c',centile,'_tuning.csv')))
+        file = file.path(output_dir, paste0('c',centile,'_tuning.rds')))
 
 final_cluster <- fit_epmeas(ecdf_list, k = k_hat, centile = centile, output_folder = output_dir)
 

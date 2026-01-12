@@ -1,0 +1,40 @@
+Centile: 03.16
+Data range: 
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+0.05552 0.06459 0.07089 0.06969 0.07511 0.07918 
+Date median: 
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+0.04021 0.04061 0.04104 0.04107 0.04152 0.04198 
+Subset data size: 
+[1] 1006 3401
+Actual data size (drop NA): 
+[1] 1006 3401
+Loading required package: maotai
+**-----------------------------------------------------------------**
+** maotai
+**  - Tools for Matrix Algebra, Optimization and Inference Problems
+**
+** Version    : 0.2.6      (2025)
+** Maintainer : Kisung You (kisung.you@outlook.com)
+** Website    : https://www.kisungyou.com/maotai
+**
+** Please share any bugs or suggestions to the maintainer.
+**-----------------------------------------------------------------**
+Loading required package: mcclust
+Loading required package: lpSolve
+Loading required package: parallel
+Evaluating k = 2
+Evaluating k = 3
+Evaluating k = 4
+Evaluating k = 5
+Evaluating k = 6
+Evaluating k = 7
+Evaluating k = 8
+Evaluating k = 9
+Evaluating k = 10
+Stability estimates: 
+        2         3         4         5         6         7         8         9 
+0.7091570 0.6727275 0.5291034 0.4836436 0.4838237 0.4954119 0.5070745 0.5395984 
+       10 
+0.5357887 
+Fitting 2 cluters to the full sample...

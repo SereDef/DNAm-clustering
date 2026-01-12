@@ -10,8 +10,8 @@ use_library = '/home/s.defina/R/x86_64-pc-linux-gnu-library/4.4'
 n_cores <- as.integer(Sys.getenv('SLURM_CPUS_PER_TASK', unset = 1))
 
 # Set-up
-k_candidates = 2:20 # K values to try
-feature_split = 0.25 # Proportion of CpGs to use for tuning at each iteration
+k_candidates = 5:25 # K values to try
+feature_split = 0.25 # Proportion of phase-1-centroids to use for tuning at each iteration
 n_iterations = 10   # Number of tuning iterations 
 
 input_dir <- "~/MPSR/metadata/clusters"
@@ -39,5 +39,6 @@ if (length(k_hat) > 1) k_hat <- min(k_hat)
 # ==============================================================================
 saveRDS(k_stability, file.path(input_dir, 'phase2_tuning.rds'))
 
-final_cluster <- fit_epmeas(ecdf_list, k = k_hat, centile = 'phase2', output_folder = input_dir)
+final_cluster <- fit_epmeas(ecdf_list, k = k_hat, centile = 'phase2', 
+                            output_folder = input_dir)
 

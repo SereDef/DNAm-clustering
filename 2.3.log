@@ -1,0 +1,43 @@
+Loading required package: maotai
+**-----------------------------------------------------------------**
+** maotai
+**  - Tools for Matrix Algebra, Optimization and Inference Problems
+**
+** Version    : 0.2.6      (2026)
+** Maintainer : Kisung You (kisung.you@outlook.com)
+** Website    : https://www.kisungyou.com/maotai
+**
+** Please share any bugs or suggestions to the maintainer.
+**-----------------------------------------------------------------**
+Loading required package: mcclust
+Loading required package: lpSolve
+Loading required package: parallel
+Evaluating k = 5
+Evaluating k = 6
+Evaluating k = 7
+Evaluating k = 8
+Evaluating k = 9
+Evaluating k = 10
+Evaluating k = 11
+Evaluating k = 12
+Evaluating k = 13
+Evaluating k = 14
+Evaluating k = 15
+Evaluating k = 16
+Evaluating k = 17
+Evaluating k = 18
+Evaluating k = 19
+Evaluating k = 20
+Evaluating k = 21
+Evaluating k = 22
+Evaluating k = 23
+Evaluating k = 24
+Evaluating k = 25
+Stability estimates: 
+        5         6         7         8         9        10        11        12 
+0.6979449 0.7049697 0.6911155 0.6820984 0.6512670 0.6854565 0.7048755 0.6846157 
+       13        14        15        16        17        18        19        20 
+0.6681145 0.7200699 0.7272293 0.7240006 0.7066975 0.7190742 0.7237999 0.7308340 
+       21        22        23        24        25 
+0.7237510 0.7266382 0.7261105 0.7281465 0.7274767 
+Fitting 20 cluters to the full sample...
