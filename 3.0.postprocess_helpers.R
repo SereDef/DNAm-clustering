@@ -191,3 +191,128 @@ clusters_plot <- function(cpg_data, cluster_data, output_file = "density_by_clus
   
   return(ividible(NULL))
 }
+
+sumstats_dir <- "~/MPSR/funct_analysis/PrentalRiskFactors_sumstats/"
+# ff1 <- "PACE-Birthweight/BirthweightEWAS_450kresults_exclCrossReactiveProbes.csv"
+
+# Has position (I think...?)
+ff1 <- 'PACE-Gestationalage/GestationalageEWAS_450kmeta-analysisresult.xlsx'
+
+# ss_raw <- read.csv(file.path(sumstats_dir, ff1))
+ss_raw <- readxl::read_excel(file.path(sumstats_dir, ff1))
+
+# ss <- ss_raw |>
+#   dplyr::select(cpg = MarkerName, pvalue = P.value, chr)
+
+ss <- ss_raw |> 
+  dplyr::select(cpg = CpGID, chr = CHR, pos = MAPINFO_Hg19, pvalue = PVALUE_FE)
+  
+cl <- readRDS('metadata.rds')
+
+# plot(table(cl$p2_cluster), col = '#048503', ylab = 'CpG counts')
+cluster_colors <- setNames(colors, 1:length(unique(cl$p2_cluster)))
+cluster_colors[['NA']] <- '#f7f7f7'
+
+dset <- merge(ss, cl, by = "cpg", all.x = TRUE)
+
+# order chromosomes and compute cumulative position for x-axis
+dset <- dset[order(dset$chr, dset$pos), ]
+
+dset$p2_cluster[is.na(dset$p2_cluster)] <- "NA"
+
+manhattan <- function(dset,
+                      thresh_gnmwide = 1e-7,
+                      thresh_suggest = 1e-5, 
+                      annotate_top = 25) {
+  
+  chr_lengths <- tapply(dset$pos, dset$chr, max)
+  chr_offsets <- c(0, cumsum(head(chr_lengths, -1)))
+  names(chr_offsets) <- names(chr_lengths)
+  
+  dset$cum_pos <- dset$pos + chr_offsets[as.character(dset$chr)]
+  
+  dset$log_pvalue <- -log10(dset$pvalue)
+  
+  # sig_cpgs <- subset(dset, log_pvalue >= -log10(thresh_gnmwide))
+  top_dog <- dset[order(dset$pvalue), ][1:annotate_top, ]
+  
+  ggplot(dset,
+         aes(x = cum_pos,
+             y = log_pvalue,
+             color = factor(p2_cluster))) +
+    geom_point(alpha = 0.7, size = 0.6) +
+    scale_color_manual(values = cluster_colors, name = "Cluster") +  # your 20-color palette
+    scale_x_continuous(
+      name = "Chromosome",
+      breaks = tapply(dset$cum_pos, dset$chr, mean),
+      labels = names(chr_lengths)
+    ) +
+    geom_hline(yintercept = -log10(thresh_gnmwide), color = "grey") +
+    geom_hline(yintercept = -log10(thresh_suggest),color = "grey", 
+               linetype = "dashed") +
+    ggrepel::geom_text_repel(data = top_dog, aes(label = p2_cluster),
+                             size = 2.5, max.overlaps = Inf, box.padding = 0.3) +
+    labs(y = expression(-log[10](p)),
+         title = "EWAS Manhattan plot by cluster") +
+    theme_minimal() +
+    theme(legend.position = "bottom",
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank()) + 
+    guides(color = guide_legend(ncol = 11))
+  
+}
+
+cluster_representation <- function(dset, thresh_gnmwide = 1e-7) {
+  
+  dset$signif <- dset$pvalue < thresh_gnmwide
+  
+  crosstab <- as.data.frame.matrix(table(dset$p2_cluster, dset$signif))
+  # rows = clusters, columns = FALSE/TRUE (non‑sig / sig)
+  
+  names(crosstab) <- c("n_nonsig", "n_sig")
+  crosstab$cluster <- rownames(crosstab)
+  
+  # total per cluster
+  crosstab$n_total <- crosstab$n_sig + crosstab$n_nonsig
+  
+  # overall rates
+  overall_sig_rate <- sum(crosstab$n_sig) / sum(crosstab$n_total)
+  overall_nonsig_rate <- 1 - overall_sig_rate
+  
+  # avoid zeros by adding a small continuity correction if needed
+  eps <- 0.001
+  
+  crosstab$lor <- with(crosstab, {
+    # cluster odds of being significant
+    odds_cluster  <- (n_sig + eps) / (n_nonsig + eps)
+    # overall odds
+    total_sig <- sum(n_sig)
+    total_nonsig  <- sum(n_nonsig)
+    odds_overall  <- (total_sig + eps) / (total_nonsig + eps)
+    log(odds_cluster / odds_overall)
+  })
+  
+  # Positive lor ⇒ cluster over‑represented among significant CpGs
+  # negative ⇒ under‑represented.
+  
+  ggplot(crosstab,
+         aes(x = lor,
+             y = reorder(cluster, lor),
+             fill = lor > 0)) +
+    geom_col() +
+    geom_vline(xintercept = 0, color = "black") +
+    scale_fill_manual(values = c("TRUE" = "#1b9e77", "FALSE" = "#d95f02"),
+                      labels = c("Under", "Over"),
+                      name = "Representation") +
+    labs(
+      x = "Log-odds of being significant (vs overall)",
+      y = "Cluster",
+      title = "Over- and under-representation of clusters among significant CpGs"
+    ) +
+    theme_minimal() +
+    theme(legend.position = "bottom")
+}
+
+# manhattan()
+
+# cluster_representation(dset)
