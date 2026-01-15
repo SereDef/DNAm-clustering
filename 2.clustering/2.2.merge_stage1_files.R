@@ -45,6 +45,8 @@ stage1_tune_files <- list.files(
   full.names = TRUE
 )
 
+k_eval <- as.character(2:10) # TODO: make this dynamic based on what was used in tuning
+
 # Combine them into one
 stage1_tuning <- purrr::map_dfr(
   stage1_tune_files,
@@ -55,8 +57,9 @@ stage1_tuning <- purrr::map_dfr(
   # add centile to cluster name 
   dplyr::mutate(centile = sub("^c(.*)_tuning.rds$", "\\1", file),
                 final_k = as.numeric(
-                  names(dplyr::pick(`2`:`10`))[max.col(dplyr::pick(`2`:`10`))])) |> 
-  dplyr::select(centile, final_k, `2`:`10`)
+                  names(dplyr::pick(dplyr::all_of(k_eval)))[
+                    max.col(dplyr::pick(dplyr::all_of(k_eval)))])) |> 
+  dplyr::select(centile, final_k, dplyr::all_of(k_eval))
 
 
 # save single file
@@ -98,4 +101,7 @@ saveRDS(ecdf_list,
 file.remove(stage1_centroid_files)
 
 # ==============================================================================
+# Also merge all the log files
 
+system('cat 2.1.logs/* > 2.1.log')
+system('rm -r 2.1.logs')

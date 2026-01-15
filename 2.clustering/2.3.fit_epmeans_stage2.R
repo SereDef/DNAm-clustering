@@ -26,8 +26,10 @@ k_stability <- stability_selection(ecdf_list,
                                    seed = 3108,
                                    n_cores = n_cores)
 
+message('=====================================================================')
 message("Stability estimates: ")
 print(k_stability)
+message('=====================================================================')
 
 k_hat <- as.integer(names(which.max(k_stability)))
 

@@ -1,12 +1,13 @@
 use_library = '/home/s.defina/R/x86_64-pc-linux-gnu-library/4.4'
 .libPaths(use_library)
 
+library(dplyr)
+
 library(ggplot2)
 library(patchwork)
 
 # require(purrr)
 # require(tidyr)
-# require(dplyr)
 
 # ------------------------------------------------------------------------------
 # Plotting helpers
@@ -44,34 +45,43 @@ colors <- setNames(
 # --- Plot k tuning process ---
 # ==============================================================================
 
-tuning_plot <- function(tuning_df) {
+tuning_plot <- function(tuning_df, 
+                        centile_structure = list('median_centile' = 1:5,
+                                                 'range_centile'  = 1:20),
+                        eval_k = 2:10) {
+  
+  centile_metrics  <- names(centile_structure)
+  centile_levels <- lapply(centile_structure, as.character)
+
+  centile_names <- gsub("_", " ", tools::toTitleCase(centile_metrics))
   
   # Transform for ggplot to use 
   tuning_long <- tuning_df |>
-    # split "centile" like "01.02" into range_centile = 01, median_centile = 02
-    tidyr::separate(centile,
-                    into = c("range_centile", "median_centile"), sep  = "\\.",
+    # split "centile" - e.g. "01.02" into median_centile = 01, range_centile = 02
+    tidyr::separate(centile, into = centile_metrics, sep  = "\\.",
                     # make them numeric
                     convert = TRUE) |>
-    tidyr::pivot_longer(cols = `2`:`10`, # numeric columns indicate evaluated k
-                        names_to = "k",
-                        values_to = "value") |>
-    dplyr::mutate(k = as.integer(k),
-                  range_centile  = factor(range_centile,  levels = 1:20),
-                  median_centile = factor(median_centile, levels = 1:20),
-                  k_selected = k == final_k)
+    tidyr::pivot_longer(cols = all_of(as.character(eval_k)), # evaluated ks
+                        names_to = "k", values_to = "value") |>
+    mutate(k = as.integer(k),
+           # turn all centile components into factors using centile_structure
+           across(all_of(centile_metrics),
+                         ~ factor(.x, levels = centile_levels[[cur_column()]])),
+           k_selected = k == final_k)
   
-  # range_colors <- setNames(colors, unique(tuning_long$range_centile))
+  # Use first centile metric for shape, second for colour (& grouping)
+  shape_by <- centile_metrics[1] # e.g. median_centile
+  color_by <- centile_metrics[2] # e.g. range_centile
   
   p <- ggplot(tuning_long,
               aes(x = k, y = value, 
-                  group = interaction(range_centile, median_centile),
-                  color = range_centile)) +
+                  group = interaction(.data[[color_by]], .data[[shape_by]]),
+                  color = .data[[color_by]])) +
     geom_line(linewidth = 0.3, alpha = 0.5) +
-    geom_point(data = ~ subset(.x, k_selected),
-               size  = 2.5, aes(shape = median_centile)) +
-    scale_color_manual(name = "Range centile", values = colors) +
-    scale_shape_manual(name = "Median centile", values = 0:20) +
+    geom_point(data = ~ subset(.x, k_selected), size  = 2.5, 
+               aes(shape = .data[[shape_by]])) +
+    scale_shape_manual(name = centile_names[1], values = 0:20) +
+    scale_color_manual(name = centile_names[2], values = colors) +
     guides(color = guide_legend(ncol = 2),   # 2-column color legend
            shape = guide_legend(ncol = 2))
   
@@ -82,35 +92,59 @@ tuning_plot <- function(tuning_df) {
 # --- Plot cluster centroids ---
 # ==============================================================================
 
-get_empirical_pdf <- function(ecdf_list, x_range = c(0,1), n_samples = 200, type = 'phase1') {
+smooth_pdf <- function(y, k = 1) {
+  # simple centred moving average
+  # k must be odd; k = 1 means no smoothing
+  if (k <= 1) return(y)
+  f <- rep(1 / k, k)
+  stats::filter(y, f, sides = 2, circular = FALSE) |> as.numeric()
+}
+
+# Convert list of ECDF (empirical cumulative distribution functions) into empirical 
+# PDF (probability density function) data.frame for plotting
+# https://mude.citg.tudelft.nl/book/2024/probability/PDF_CDF.html
+
+get_empirical_pdf <- function(ecdf_list, x_range = c(0,1), n_samples = 1000, 
+                              smoothing = 1, # no smoothing
+                              type = 'stage1', 
+                              cluster_name_structure = c('median_group', 
+                                                         'range_group',
+                                                         'cluster')) {
   
   # Check effective range
-  obs_x_range <- range(sapply(ecdf_list, function(f) quantile(f, c(0.01, 0.99))))
-  message("Observed x range:")
-  print(obs_x_range)
+  obs_x_range <- range(sapply(ecdf_list, function(f) range(f)))
+  message("Observed x range: ", paste(obs_x_range, collapse=' - '))
   
-  # get the empirical PDF back 
+  # Construct Lebesgue grid
+  x_seq <- seq(x_range[1], x_range[2], length.out = n_samples+1)
+  dx <- diff(x_seq)[1] # since uniform spacing I treat dx as a scalar
+  x_pdf <- x_seq[-length(x_seq)] + dx/2 # center each bin
+
+  # Evaluate each ECDF on the grid
+  # Numerical derivative: PDF ≈ Δ.CDF / Δ.x
   pdf_data <- purrr::map_dfr(seq_along(ecdf_list), ~ {
     
-    # Evaluate ECDF at fine grid
-    x_seq <- seq(x_range[1], x_range[2], length.out = n_samples)
     cdf_vals <- ecdf_list[[.x]](x_seq)
+
+    pdf_vals_raw <- diff(cdf_vals) / dx # vector of length n_samples
+
+    # optional smoothing
+    pdf_vals <- smooth_pdf(pdf_vals_raw, k = smoothing)
     
-    # Numerical derivative: PDF ≈ ΔCDF/Δx
-    pdf_vals <- diff(cdf_vals) / diff(x_seq)  # vector of length n_samples
-    x_pdf <- x_seq[-length(x_seq)] + diff(x_seq)[1]/2  # centers
-    
-    if (type == 'phase1') {
-      cluster_comp <- strsplit(names(ecdf_list)[.x], "\\.")[[1]] |> as.numeric()
-      range_group <- cluster_comp[1]
-      median_group <- cluster_comp[2]
-      cluster <- cluster_comp[3]
+    if (type == 'stage1') {
+      # Also extract the cluster metadata (centile groups)
+      cluster_name_decomp <- strsplit(names(ecdf_list)[.x], "\\.")[[1]] |> as.numeric()
+
+      meta_df <- as.list(
+        as.numeric(cluster_name_decomp[seq_along(cluster_name_structure)]))
       
-      return(data.frame(x = x_pdf, y = pdf_vals, cluster = cluster,
-                        range_group = range_group,
-                        median_group = median_group))
+      names(meta_df) <- centile_metrics
+      
+      return(data.frame(x = x_pdf, y = pdf_vals, !!!meta_df))
+
     } else {
-      
+
+      # In stage 2 there is only one group to cluster
       return(data.frame(x = x_pdf, y = pdf_vals, cluster = .x))
     }
   })
@@ -119,29 +153,30 @@ get_empirical_pdf <- function(ecdf_list, x_range = c(0,1), n_samples = 200, type
 }
 
 
-centroid_plot <- function(pdf_data, output_file = 'centroids_by_range_centile.pdf') {
-  
-  # Plot on PDF 
+centroid_plot <- function(pdf_data, offset = 1.05,
+                          output_file = 'centroids_by_range_centile.pdf') {
+
+  # Plot in pdf file
   pdf(output_file, width = 10, height = 8)
   
+  # TODO: this assumes range and median are used for grouping
   if ('range_group' %in% names(pdf_data)) {
     
     purrr::walk(unique(pdf_data$range_group), ~ {
       
-      subset_data <- dplyr::filter(pdf_data, range_group == .x)
+      subset_data <- filter(pdf_data, range_group == .x)
       
       # pre-compute within-range_group max y to scale offsets
-      offset_step <- max(subset_data$y) * 0.3
+      offset_step <- max(subset_data$y) * 1.05
       
       subset_data$y_offset <- (subset_data$median_group - 1L) * offset_step
       subset_data$new_y <- subset_data$y + subset_data$y_offset
       
-      p <- ggplot(subset_data, aes(x = x, y = new_y, 
-                                   color = factor(cluster), 
+      p <- ggplot(subset_data, aes(x = x, y = new_y, color = factor(cluster), 
                                    group = interaction(cluster, median_group))) +
-        geom_line(linewidth = 0.5, alpha = 0.8) +
+        geom_line(linewidth = 0.4, alpha = 0.7) +
         scale_color_manual(name = "Cluster", values = colors) +
-        scale_y_continuous(name   = "Density (offset by median group)",
+        scale_y_continuous(name = "Density (offset by median group)",
                            breaks = subset_data$y_offset,
                            labels = subset_data$median_group) +
         labs(title = .x, x = "Methylation") +
@@ -153,9 +188,8 @@ centroid_plot <- function(pdf_data, output_file = 'centroids_by_range_centile.pd
     
   } else {
      
-    p <- ggplot(pdf_data, aes(x = x, y = y,
-                              color = factor(cluster))) +
-      geom_line(size = 0.5, alpha = 0.7) +
+    p <- ggplot(pdf_data, aes(x = x, y = y, color = factor(cluster))) +
+      geom_line(linewidth = 0.5, alpha = 0.7) +
       scale_color_manual(name = "Cluster", values = colors) +
       labs(title = 'Final clusters', x = "Methylation", y = "Density") +
       theme_minimal() +
@@ -176,10 +210,16 @@ centroid_plot <- function(pdf_data, output_file = 'centroids_by_range_centile.pd
 # ==============================================================================
 
 cpg_subset_densities <- function(cluster_subset, cpg_data, fixed_x_range = TRUE, 
-                                 title, color) {
+                                 title, color, random_subset = NULL) {
   
   cpg_idx <- match(cluster_subset$cpg, rownames(cpg_data))
   cpg_idx <- cpg_idx[!is.na(cpg_idx)] # should not be any missing matches but just in case
+
+  if (!is.null(random_subset)) {
+    n_subset <- as.integer(length(cpg_idx) * random_subset)
+    set.seed(3108)
+    cpg_idx <- sample(cpg_idx, n_subset)
+  }
   
   # Subset valid data only + get colors
   cpg_data_subset <- cpg_data[cpg_idx, ]
@@ -213,7 +253,8 @@ cpg_subset_densities <- function(cluster_subset, cpg_data, fixed_x_range = TRUE,
   
 }
 
-clusters_plot <- function(cpg_data, cluster_data, cluster_var = 'p1_cluster', 
+clusters_plot <- function(cpg_data, cluster_data, cluster_var = 'p1_cluster',
+                          random_subset = NULL,
                           output_file = "density_by_cluster.pdf", 
                           fixed_x_range = FALSE) {
   
@@ -223,35 +264,44 @@ clusters_plot <- function(cpg_data, cluster_data, cluster_var = 'p1_cluster',
   pdf(output_file, width = 12, height = 10)
   
   if (cluster_var == 'p2_cluster') {
+
     n_clusters <- max(as.numeric(cluster_data$p2_cluster))
+
     for (cluster in 1:n_clusters) {
       
-      cluster_subset <- cluster_data |>
-        dplyr::filter(p2_cluster == cluster)
+      cluster_subset <- cluster_data |> filter(p2_cluster == cluster)
+
+      cluster_size <- nrow(cluster_subset)
       
-      cpg_subset_densities(cluster_subset, cpg_data, fixed_x_range = TRUE,
-                           title = paste('Cluster:', cluster), 
+      cpg_subset_densities(cluster_subset, cpg_data, fixed_x_range = TRUE, 
+                           c
+                           title = sprintf('Cluster: %d (n = %d)', cluster, cluster_size),
                            color = cluster)
     }
+
   } else if (cluster_var == 'p1_cluster') {
-    
-    for (range_g in unique(cluster_data$range_centile)) {
+
+    # TODO: this assumes median and range are used for grouping
+    #       & that range has 20 levels
+
+    for (median_g in unique(cluster_data$median_centile)) {
       
       par(mfrow = c(4, 5), mar = c(1, 1, 1, 1), oma = c(0, 0, 2, 0), 
           yaxt  = "n")  # suppress y axis ticks & labels
       
-      for (median_g in unique(cluster_data$median_centile)) {
+      for (range_g in unique(cluster_data$range_centile)) {
         
         cluster_subset <- cluster_data |>
-          dplyr::filter(range_centile == range_g, median_centile == median_g)
+          filter(median_centile == median_g, range_centile == range_g)
         
         n_clusters <- max(as.integer(cluster_subset$cluster))
         
         cpg_subset_densities(cluster_subset, cpg_data, fixed_x_range = fixed_x_range,
-                             title = paste('Median centile:', median_g), 
+                             random_subset = random_subset,
+                             title = paste('Range centile:', range_g), 
                              color = 1:n_clusters)
       }
-      mtext(paste("Range centile:", range_g), outer = TRUE, cex = 1.2, line = 0)
+      mtext(paste("Median centile:", median_g), outer = TRUE, cex = 1.2, line = 0)
     }
   }
   

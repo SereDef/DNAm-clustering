@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --job-name=2.1.epimeans
-#SBATCH --array=1-400
+#SBATCH --array=1-100
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=10
 #SBATCH --time=3-00:00:00

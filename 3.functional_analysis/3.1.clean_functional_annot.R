@@ -5,6 +5,7 @@ use_library = '/home/s.defina/R/x86_64-pc-linux-gnu-library/4.4'
 .libPaths(use_library)
 
 sumstats_dir <- "~/MPSR/funct_analysis/PrentalRiskFactors_sumstats/"
+output_file <- "../metadata/summstats_prenatalrisk.rds"
 
 # What i am working with you guys:
 # 
@@ -195,5 +196,5 @@ annot <- minfi::getAnnotation(IlluminaHumanMethylation450kanno.ilmn12.hg19) |>
 # Why are there NAs?? how to handle them??
 sumstats <- merge(annot, all_ss, by = 'cpg', all.x = TRUE)
 
-saveRDS(sumstats, 'summstats_prenatalrisk.rds')
+saveRDS(sumstats, output_file)
 

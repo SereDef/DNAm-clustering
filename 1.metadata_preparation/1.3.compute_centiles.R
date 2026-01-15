@@ -3,7 +3,7 @@ use_library = '/home/s.defina/R/x86_64-pc-linux-gnu-library/4.4'
 
 input_dir <- "~/MPSR/metadata"
 
-output_file <- "./metadata/CpG_metadata.rds"
+output_file <- "../metadata/CpG_metadata.rds"
 
 meta_desc <- file.path(input_dir, 'metadata_mega.desc')
 meta_desc_ComBat <- file.path(input_dir, 'metadata_mega_ComBat.desc')
