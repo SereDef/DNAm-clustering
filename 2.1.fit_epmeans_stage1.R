@@ -11,44 +11,43 @@ n_cores <- as.integer(Sys.getenv('SLURM_CPUS_PER_TASK', unset = 1))
 
 # Set-up
 k_candidates = 2:10 # K values to try
-feature_split = 0.25 # Proportion of CpGs to use for tuning at each iteration
+feature_split = 0.5 # Proportion of CpGs to use for tuning at each iteration
 n_iterations = 10   # Number of tuning iterations 
 
-input_dir <- "~/MPSR/data/batch_corrected"
+data_descfile <- "~/MPSR/data/batch_corrected/mega_ComBat.desc"
+metadata_file <- "~/MPSR/DNAm-clustering/metadata/CpG_metadata.rds"
 output_dir <- "~/MPSR/metadata/clusters"
 
-# (Pre-processed) methylation matrix
-data_desc <- file.path(input_dir, 'mega_ComBat.desc')
-# data <- bigmemory::attach.big.matrix(data_desc, lockfile = TRUE)
-
 # Meta-data matrix
-meta_bins <- readRDS(file.path(dirname(output_dir), 'metadata_mega_ComBat_binned.rds'))
-centiles <- sort(unique(meta_bins[,'centile_bins'])) # 400 in this version
+meta_bins <- readRDS(metadata_file)
+centiles <- sort(unique(meta_bins[,'centile_bins'])) # 100 in this version
 
 centile <- centiles[array_id]
 
 centile_subset <- meta_bins[meta_bins[,'centile_bins'] == centile, ]
 
-message("Centile: ", centile)
-message("Data range: ")
-print(summary(as.numeric(centile_subset[,'range_mega'])))
-message("Date median: ")
-print(summary(as.numeric(centile_subset[,'median_mega'])))
-
-# Attach data matrix [rows = CpGs, cols = samples]
-data <- bigmemory::attach.big.matrix(data_desc, lockfile = TRUE)
+# Attach (pre-processed) methylation data matrix[rows = CpGs, cols = samples]
+data <- bigmemory::attach.big.matrix(data_descfile, lockfile = TRUE)
 
 # Select relevant cpgs (from the centile)
 df <- data[rownames(centile_subset), ]
 
-message("Subset data size: ")
+message('=====================================================================')
+message("Centile: ", centile)
+message("\nData median: ")
+print(summary(as.numeric(centile_subset[,'median_mega'])))
+message("\nData range: ")
+print(summary(as.numeric(centile_subset[,'range_mega'])))
+
+message("\nSubset data size: ")
 print(dim(df))
 
 # drop CpGs with any missing values (TMP)
 df <- df[complete.cases(df),]
 
-message("Actual data size (drop NA): ")
+message("\nActual data size (drop NA): ")
 print(dim(df))
+message('=====================================================================')
 
 # Pre-compute CpG ECDFs 
 n_cpg = nrow(df)
@@ -67,8 +66,10 @@ k_stability <- stability_selection(ecdf_list,
                                    seed = 3108,
                                    n_cores = n_cores)
 
+message('=====================================================================')
 message("Stability estimates: ")
 print(k_stability)
+message('=====================================================================')
 
 k_hat <- as.integer(names(which.max(k_stability)))
 
@@ -79,6 +80,6 @@ if (length(k_hat) > 1) k_hat <- min(k_hat)
 saveRDS(t(k_stability),
         file = file.path(output_dir, paste0('c',centile,'_tuning.rds')))
 
-final_cluster <- fit_epmeas(ecdf_list, k = k_hat, centile = centile, output_folder = output_dir)
+final_cluster <- fit_epmeas(ecdf_list, k = k_hat, centile = centile, 
+                            output_folder = output_dir)
 
-# Do the plotting later 

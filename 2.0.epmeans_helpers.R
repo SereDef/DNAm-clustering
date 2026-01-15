@@ -88,7 +88,7 @@ stability_selection <- function(ecdf_list,
     #    VI-based similarity: S = 1 - VI(C1, C2) / (2 * log(k))
     S_vals <- sapply(comb_idx, function(j) {
       vi <- mcclust::vi.dist(clusters_k[[j[1]]], clusters_k[[j[2]]])
-      return(1 - vi / (2 * log(k)))
+      return(1.00 - vi / (2 * log(k)))
     })
     
     # 3) Average 
@@ -117,7 +117,7 @@ fit_epmeas <- function(ecdf_list, k, centile, output_folder) {
   
   centroids <- final_clusters$centers
   
-  if (centile == 'phase2') {
+  if (centile == 'stage2') {
     names(clusters) <- c('centile','cluster')
     centile_name <- centile 
   } else {

@@ -4,25 +4,23 @@
 use_library = '/home/s.defina/R/x86_64-pc-linux-gnu-library/4.4'
 .libPaths(use_library)
 
-input_dir <- "~/MPSR/metadata/clusters"
-output_dir <- "~/MPSR/metadata/clusters"
+input_dir <- output_dir <- "~/MPSR/metadata/clusters"
 
 source("2.0.epmeans_helpers.R")
-# library(dplyr)
+
+# require(dplyr)
 # require(readr)
 # require(purrr)
-# require(tidyr)
 
-# Identify the files containing the clusters assigned to each CpG in phase 1 ---
-phase1_cluster_files <- list.files(
-  path   = input_dir,
+# Identify the files containing the clusters assigned to each CpG in stage 1 ---
+stage1_cluster_files <- list.files(
+  path = input_dir,
   pattern = "^c.*_k[1-9][0-9]?\\.rds$",
-  full.names = TRUE
-)
+  full.names = TRUE)
 
 # Combine them into one
-phase1_clusters <- purrr::map_dfr(
-  phase1_cluster_files,
+stage1_clusters <- purrr::map_dfr(
+  stage1_cluster_files,
   ~ readr::read_rds(.x) |>               # read one at the time
     as.data.frame()  |>                  # convert matrix to data.frame
     dplyr::mutate(file = basename(.x)),  # record file name
@@ -33,23 +31,23 @@ phase1_clusters <- purrr::map_dfr(
   dplyr::select(cpg = V1, cluster)
 
 # Save single file
-saveRDS(phase1_clusters,
-        file.path(input_dir, 'phase1_clusters.rds'))
+saveRDS(stage1_clusters,
+        file.path(output_dir, 'stage1_clusters.rds'))
 
 # Remove individual files
-file.remove(phase1_cluster_files)
+file.remove(stage1_cluster_files)
 
 # Identify the tuning files, and combine them ----------------------------------
 
-phase1_tune_files <- list.files(
-  path   = input_dir,
+stage1_tune_files <- list.files(
+  path = input_dir,
   pattern = "^c.*_tuning.rds$",
   full.names = TRUE
 )
 
 # Combine them into one
-phase1_tuning <- purrr::map_dfr(
-  phase1_tune_files,
+stage1_tuning <- purrr::map_dfr(
+  stage1_tune_files,
   ~ readr::read_rds(.x) |>               # read one at the time
     as.data.frame()  |>                  # convert matrix to data.frame
     dplyr::mutate(file = basename(.x)),  # record file name
@@ -62,44 +60,42 @@ phase1_tuning <- purrr::map_dfr(
 
 
 # save single file
-saveRDS(phase1_tuning,
-        file.path(input_dir, 'phase1_tuning.rds'))
+saveRDS(stage1_tuning,
+        file.path(output_dir, 'stage1_tuning.rds'))
 
 # Remove individual files
-file.remove(phase1_tune_files)
+file.remove(stage1_tune_files)
 
 # Centroids --------------------------------------------------------------------
 
-phase1_centroid_files <- list.files(
+stage1_centroid_files <- list.files(
     path   = input_dir,
     pattern = "^c.*_centroids.rds$",
-    full.names = TRUE
-  )
+    full.names = TRUE)
 
-ecdf_list <- phase1_centroid_files |>
+ecdf_list <- stage1_centroid_files |>
   purrr::imap(
     function(path, centile) {
       # Get centile names
       file <- basename(path)
       centile <- sub("^c(.*)_centroids.rds$", "\\1", file)
       
-      # Read in centrod list 
-      centroids  <- readRDS(path) # list of centroid ecdf
+      # Read list of centroid ECDF objects 
+      centroids  <- readRDS(path)
       
-      # rename elements: <centile>.<cluster>
+      # Rename elements: <centile>.<cluster>
       names(centroids) <- paste(centile, seq_along(centroids), sep='.')
       
       return(centroids)}) |>
-  # flatten to one list
+  # Flatten
   purrr::list_c() 
-
 
 # save single file
 saveRDS(ecdf_list,
-        file.path(input_dir, 'phase1_centroids.rds'))
+        file.path(output_dir, 'stage1_centroids.rds'))
 
 # Remove individual files
-file.remove(phase1_centroid_files)
+file.remove(stage1_centroid_files)
 
 # ==============================================================================
 

@@ -2,21 +2,47 @@ use_library = '/home/s.defina/R/x86_64-pc-linux-gnu-library/4.4'
 .libPaths(use_library)
 
 library(ggplot2)
+library(patchwork)
 
-require(purrr)
-require(tidyr)
-require(dplyr)
-require(Polychrome)
+# require(purrr)
+# require(tidyr)
+# require(dplyr)
 
 # ------------------------------------------------------------------------------
 # Plotting helpers
 # ------------------------------------------------------------------------------
 
-colors <- Polychrome::kelly.colors(21)[-1] # avoid white
+# remove Polychrome dependency while mantaining optimal perceptual differences
+# colors <- Polychrome::kelly.colors(21)[-1] # avoid white
 
-# colors <- c("red", "blue","gold", "darkgreen", "pink", 
-#             "lightblue", "purple", "lightgreen","brown", "orange",
-#             "grey","darkblue","yellow", "cyan", "magenta")
+colors <- setNames(
+  c("#3D4C8B",  # deep blue (replace one of the close purples)
+    "#F3C300", # vivid yellow
+    "#2E8B57", # sea green (swap for one of the very similar yellows)
+    "#875692", # strong purple
+    "#BE0032", # strong red
+    "#A1CAF1", # light blue
+    "#C2B280", # sand
+    "#F38400", # strong orange
+    "#848482", # medium grey
+    "#008856", # green
+    "#E68FAC", # pink
+    "#0067A5", # blue
+    "#F6A603", # yellow-orange
+    "#B3446C", # purplish red
+    "#DCD300", # yellow-green
+    "#604E97", # violet
+    "#F99379", # light orange
+    "#654522", # brown
+    "#E25822", # reddish orange
+    "#222222"  # black-ish, very dark grey
+  ),
+  1:20
+)
+
+# ==============================================================================
+# --- Plot k tuning process ---
+# ==============================================================================
 
 tuning_plot <- function(tuning_df) {
   
@@ -35,7 +61,7 @@ tuning_plot <- function(tuning_df) {
                   median_centile = factor(median_centile, levels = 1:20),
                   k_selected = k == final_k)
   
-  range_colors <- setNames(colors, unique(tuning_long$range_centile))
+  # range_colors <- setNames(colors, unique(tuning_long$range_centile))
   
   p <- ggplot(tuning_long,
               aes(x = k, y = value, 
@@ -44,13 +70,17 @@ tuning_plot <- function(tuning_df) {
     geom_line(linewidth = 0.3, alpha = 0.5) +
     geom_point(data = ~ subset(.x, k_selected),
                size  = 2.5, aes(shape = median_centile)) +
-    scale_color_manual(name = "Range centile", values = range_colors) +
+    scale_color_manual(name = "Range centile", values = colors) +
     scale_shape_manual(name = "Median centile", values = 0:20) +
     guides(color = guide_legend(ncol = 2),   # 2-column color legend
            shape = guide_legend(ncol = 2))
   
   return(p)
 }
+
+# ==============================================================================
+# --- Plot cluster centroids ---
+# ==============================================================================
 
 get_empirical_pdf <- function(ecdf_list, x_range = c(0,1), n_samples = 200, type = 'phase1') {
   
@@ -72,11 +102,11 @@ get_empirical_pdf <- function(ecdf_list, x_range = c(0,1), n_samples = 200, type
     
     if (type == 'phase1') {
       cluster_comp <- strsplit(names(ecdf_list)[.x], "\\.")[[1]] |> as.numeric()
-      range_group <- sprintf("Range: %02d", cluster_comp[1])
-      median_group <- sprintf("Median: %02d", cluster_comp[2])
+      range_group <- cluster_comp[1]
+      median_group <- cluster_comp[2]
       cluster <- cluster_comp[3]
       
-      return(data.frame(x = x_pdf, y = pdf_vals, cluster = cluster
+      return(data.frame(x = x_pdf, y = pdf_vals, cluster = cluster,
                         range_group = range_group,
                         median_group = median_group))
     } else {
@@ -96,19 +126,25 @@ centroid_plot <- function(pdf_data, output_file = 'centroids_by_range_centile.pd
   
   if ('range_group' %in% names(pdf_data)) {
     
-    # median_colors <- setNames(colors, unique(pdf_data$median_group))
-    
     purrr::walk(unique(pdf_data$range_group), ~ {
       
       subset_data <- dplyr::filter(pdf_data, range_group == .x)
       
-      p <- ggplot(subset_data, aes(x = x, y = y, 
-                                   color = factor(median_group), 
-                                   linetype = factor(cluster))) +
-        geom_line(size = 0.8, alpha = 0.8) +
-        scale_color_viridis_d(name = "Median centile") +
-        scale_linetype_discrete(name = "Cluster") +
-        labs(title = .x, x = "Methylation", y = "Density") +
+      # pre-compute within-range_group max y to scale offsets
+      offset_step <- max(subset_data$y) * 0.3
+      
+      subset_data$y_offset <- (subset_data$median_group - 1L) * offset_step
+      subset_data$new_y <- subset_data$y + subset_data$y_offset
+      
+      p <- ggplot(subset_data, aes(x = x, y = new_y, 
+                                   color = factor(cluster), 
+                                   group = interaction(cluster, median_group))) +
+        geom_line(linewidth = 0.5, alpha = 0.8) +
+        scale_color_manual(name = "Cluster", values = colors) +
+        scale_y_continuous(name   = "Density (offset by median group)",
+                           breaks = subset_data$y_offset,
+                           labels = subset_data$median_group) +
+        labs(title = .x, x = "Methylation") +
         theme_minimal() +
         theme(legend.position = "bottom")
       
@@ -116,13 +152,11 @@ centroid_plot <- function(pdf_data, output_file = 'centroids_by_range_centile.pd
     })
     
   } else {
-    cluster_levels <- unique(pdf_data$cluster)
-    cluster_colors <- setNames(colors[1:length(cluster_levels)], cluster_levels)
-    
+     
     p <- ggplot(pdf_data, aes(x = x, y = y,
                               color = factor(cluster))) +
       geom_line(size = 0.5, alpha = 0.7) +
-      scale_color_manual(name = "Cluster", values = cluster_colors) +
+      scale_color_manual(name = "Cluster", values = colors) +
       labs(title = 'Final clusters', x = "Methylation", y = "Density") +
       theme_minimal() +
       theme(legend.position = "bottom") + 
@@ -137,7 +171,50 @@ centroid_plot <- function(pdf_data, output_file = 'centroids_by_range_centile.pd
   
 }
 
-clusters_plot <- function(cpg_data, cluster_data, output_file = "density_by_cluster.pdf", 
+# ==============================================================================
+# --- Plot individual CpG densities ---
+# ==============================================================================
+
+cpg_subset_densities <- function(cluster_subset, cpg_data, fixed_x_range = TRUE, 
+                                 title, color) {
+  
+  cpg_idx <- match(cluster_subset$cpg, rownames(cpg_data))
+  cpg_idx <- cpg_idx[!is.na(cpg_idx)] # should not be any missing matches but just in case
+  
+  # Subset valid data only + get colors
+  cpg_data_subset <- cpg_data[cpg_idx, ]
+  
+  # Pre-compute ALL densities first for limits (rows = cpgs)
+  all_densities <- apply(cpg_data_subset, 1, density, bw = "SJ", n = 500)
+  
+  y_range <- c(0, max(sapply(all_densities, function(d) max(d$y)), na.rm = TRUE))
+  
+  if (fixed_x_range) {
+    x_range <- c(0, 1)
+  } else {
+    x_range <- range(sapply(all_densities, function(d) range(d$x)), na.rm = TRUE)
+  }
+  
+  # Plot frame with axes
+  plot(0, type = "n", xlim = x_range, ylim = y_range, 
+       main = title, 
+       cex.main = 0.8, xlab = "Methylation", ylab = "Density")
+  
+  if (length(color) == 1L) {
+    cluster_colors <- rep(colors[color], nrow(cpg_data_subset))
+  } else {
+    cluster_colors <- colors[as.integer(cluster_subset$cluster[cpg_idx])]
+  }
+  
+  # Draw densities
+  for (i in seq_len(nrow(cpg_data_subset))) {
+    lines(all_densities[[i]], col = scales::alpha(cluster_colors[i], 0.3), lwd = 0.3)
+  }
+  
+}
+
+clusters_plot <- function(cpg_data, cluster_data, cluster_var = 'p1_cluster', 
+                          output_file = "density_by_cluster.pdf", 
                           fixed_x_range = FALSE) {
   
   # TODO: Pre-compute global y-limit for consistent scaling across page
@@ -145,115 +222,102 @@ clusters_plot <- function(cpg_data, cluster_data, output_file = "density_by_clus
   
   pdf(output_file, width = 12, height = 10)
   
-  for (range_g in unique(cluster_data$range_centile)) {
-    
-    par(mfrow = c(4, 5), mar = c(1, 1, 1, 1), oma = c(0, 0, 2, 0), 
-        yaxt  = "n")  # suppress y axis ticks & labels
-    
-    for (median_g in unique(cluster_data$median_centile)) {
+  if (cluster_var == 'p2_cluster') {
+    n_clusters <- max(as.numeric(cluster_data$p2_cluster))
+    for (cluster in 1:n_clusters) {
       
       cluster_subset <- cluster_data |>
-        dplyr::filter(range_centile == range_g, median_centile == median_g)
+        dplyr::filter(p2_cluster == cluster)
       
-      cpg_idx <- match(cluster_subset$cpg, rownames(cpg_data))
-      cpg_idx <- cpg_idx[!is.na(cpg_idx)] # should not be any missing matched but just in case
-      
-      # Subset valid data only + get colors
-      cpg_data_subset <- cpg_data[cpg_idx, ]
-      cluster_color <- colors[as.integer(cluster_subset$cluster[cpg_idx])]
-      
-      # Pre-compute ALL densities first for limits
-      all_densities <- apply(cpg_data_subset, 1, density, bw = "SJ", n = 500)
-      
-      y_range <- c(0, max(sapply(all_densities, function(d) max(d$y)), na.rm = TRUE))
-      
-      if (fixed_x_range) {
-        x_range <- c(0, 1)
-      } else {
-        x_range <- range(sapply(all_densities, function(d) range(d$x)), na.rm = TRUE)
-      }
-      
-      # Plot frame with axes
-      plot(0, type = "n", xlim = x_range, ylim = y_range, main = paste('Median centile:', median_g), 
-           cex.main = 0.8, xlab = "Methylation", ylab = "Density")
-      
-      # Draw densities
-      for (i in seq_len(nrow(cpg_data_subset))) {
-        lines(all_densities[[i]], 
-              col = scales::alpha(cluster_color[i], 0.3), lwd = 0.3)
-      }
+      cpg_subset_densities(cluster_subset, cpg_data, fixed_x_range = TRUE,
+                           title = paste('Cluster:', cluster), 
+                           color = cluster)
     }
+  } else if (cluster_var == 'p1_cluster') {
     
-    mtext(paste("Range centile:", range_g), outer = TRUE, cex = 1.2, line = 0)
+    for (range_g in unique(cluster_data$range_centile)) {
+      
+      par(mfrow = c(4, 5), mar = c(1, 1, 1, 1), oma = c(0, 0, 2, 0), 
+          yaxt  = "n")  # suppress y axis ticks & labels
+      
+      for (median_g in unique(cluster_data$median_centile)) {
+        
+        cluster_subset <- cluster_data |>
+          dplyr::filter(range_centile == range_g, median_centile == median_g)
+        
+        n_clusters <- max(as.integer(cluster_subset$cluster))
+        
+        cpg_subset_densities(cluster_subset, cpg_data, fixed_x_range = fixed_x_range,
+                             title = paste('Median centile:', median_g), 
+                             color = 1:n_clusters)
+      }
+      mtext(paste("Range centile:", range_g), outer = TRUE, cex = 1.2, line = 0)
+    }
   }
   
   dev.off()
   
-  return(ividible(NULL))
+  return(invisible(NULL))
 }
 
-sumstats_dir <- "~/MPSR/funct_analysis/PrentalRiskFactors_sumstats/"
-# ff1 <- "PACE-Birthweight/BirthweightEWAS_450kresults_exclCrossReactiveProbes.csv"
+# ==============================================================================
+# --- Plot cluster representation in EWAS results ---
+# ==============================================================================
 
-# Has position (I think...?)
-ff1 <- 'PACE-Gestationalage/GestationalageEWAS_450kmeta-analysisresult.xlsx'
-
-# ss_raw <- read.csv(file.path(sumstats_dir, ff1))
-ss_raw <- readxl::read_excel(file.path(sumstats_dir, ff1))
-
-# ss <- ss_raw |>
-#   dplyr::select(cpg = MarkerName, pvalue = P.value, chr)
-
-ss <- ss_raw |> 
-  dplyr::select(cpg = CpGID, chr = CHR, pos = MAPINFO_Hg19, pvalue = PVALUE_FE)
-  
-cl <- readRDS('metadata.rds')
-
-# plot(table(cl$p2_cluster), col = '#048503', ylab = 'CpG counts')
-cluster_colors <- setNames(colors, 1:length(unique(cl$p2_cluster)))
-cluster_colors[['NA']] <- '#f7f7f7'
-
-dset <- merge(ss, cl, by = "cpg", all.x = TRUE)
-
-# order chromosomes and compute cumulative position for x-axis
-dset <- dset[order(dset$chr, dset$pos), ]
-
-dset$p2_cluster[is.na(dset$p2_cluster)] <- "NA"
-
-manhattan <- function(dset,
+manhattan <- function(dset, ewas, cluster_var = 'p2_cluster', 
                       thresh_gnmwide = 1e-7,
                       thresh_suggest = 1e-5, 
-                      annotate_top = 25) {
+                      annotate_top = 50) {
+  
+  # Pre-process cluster information ============================================
+  n_clusters <- length(unique(dset[, cluster_var]))
+  
+  # set CpGs not assigned to cluster as separate category
+  dset[, cluster_var][is.na(dset[, cluster_var])] <- 'NA'
+  
+  cluster_colors <- colors
+  cluster_colors[['NA']] <- '#f7f7f7'
+  
+  # Pre-process p-value information ============================================
+  
+  dset$log_pvalue <- -log10(dset[, paste('pvalue', ewas, sep="_")])
+  
+  ewas_name <- gsub('\\.', ' ', ewas)
+  
+  # Pre-process chromosome positions ===========================================
+  
+  # order by genomic position
+  dset <- dset[order(dset$chr, dset$pos), ]
   
   chr_lengths <- tapply(dset$pos, dset$chr, max)
-  chr_offsets <- c(0, cumsum(head(chr_lengths, -1)))
+  chr_offsets <- c(0, cumsum(as.numeric(head(chr_lengths, -1))))
   names(chr_offsets) <- names(chr_lengths)
   
   dset$cum_pos <- dset$pos + chr_offsets[as.character(dset$chr)]
   
-  dset$log_pvalue <- -log10(dset$pvalue)
-  
   # sig_cpgs <- subset(dset, log_pvalue >= -log10(thresh_gnmwide))
-  top_dog <- dset[order(dset$pvalue), ][1:annotate_top, ]
+  top_cpgs <- dset[order(-dset$log_pvalue), ][1:annotate_top, ]
   
   ggplot(dset,
          aes(x = cum_pos,
              y = log_pvalue,
-             color = factor(p2_cluster))) +
-    geom_point(alpha = 0.7, size = 0.6) +
-    scale_color_manual(values = cluster_colors, name = "Cluster") +  # your 20-color palette
-    scale_x_continuous(
-      name = "Chromosome",
-      breaks = tapply(dset$cum_pos, dset$chr, mean),
-      labels = names(chr_lengths)
-    ) +
+             color = factor(.data[[cluster_var]]))) +
+    geom_point(alpha = 0.8, size = 0.5) +
+    # Color clusters 
+    scale_color_manual(values = cluster_colors, name = "Cluster") +
+    # Position chr labels
+    scale_x_continuous(name = "Chromosome",
+                       breaks = tapply(dset$cum_pos, dset$chr, mean),
+                       labels = names(chr_lengths)) +
+    # Add significance thresholds
     geom_hline(yintercept = -log10(thresh_gnmwide), color = "grey") +
-    geom_hline(yintercept = -log10(thresh_suggest),color = "grey", 
-               linetype = "dashed") +
-    ggrepel::geom_text_repel(data = top_dog, aes(label = p2_cluster),
+    geom_hline(yintercept = -log10(thresh_suggest), color = "grey", linetype = "dashed") +
+    # Annotate clusters
+    ggrepel::geom_text_repel(data = top_cpgs, 
+                             aes(label = .data[[cluster_var]]),
                              size = 2.5, max.overlaps = Inf, box.padding = 0.3) +
-    labs(y = expression(-log[10](p)),
-         title = "EWAS Manhattan plot by cluster") +
+    # Labels, title, legend
+    labs(y = expression(-log[10](p)), title = paste(ewas_name, "EWAS")) +
     theme_minimal() +
     theme(legend.position = "bottom",
           panel.grid.major.x = element_blank(),
@@ -262,13 +326,18 @@ manhattan <- function(dset,
   
 }
 
-cluster_representation <- function(dset, thresh_gnmwide = 1e-7) {
+cluster_representation <- function(dset, ewas, cluster_var = 'p2_cluster', 
+                                   threshold = 1e-7) {
   
-  dset$signif <- dset$pvalue < thresh_gnmwide
+  # Pre-process p-value information ============================================
+  ewas_name <- gsub('\\.', ' ', ewas)
+  dset$signif <- dset[, paste('pvalue', ewas, sep="_")] < threshold
+  # Ensure table get all levels always
+  dset$signif <- factor(dset$signif, levels = c(FALSE, TRUE))
   
-  crosstab <- as.data.frame.matrix(table(dset$p2_cluster, dset$signif))
-  # rows = clusters, columns = FALSE/TRUE (non‑sig / sig)
-  
+  # Compute log(OR) for comparison =============================================
+  # Cross tab for comparison: rows = clusters, columns = FALSE/TRUE (significant)
+  crosstab <- as.data.frame.matrix(table(dset[, cluster_var], dset$signif))
   names(crosstab) <- c("n_nonsig", "n_sig")
   crosstab$cluster <- rownames(crosstab)
   
@@ -279,8 +348,12 @@ cluster_representation <- function(dset, thresh_gnmwide = 1e-7) {
   overall_sig_rate <- sum(crosstab$n_sig) / sum(crosstab$n_total)
   overall_nonsig_rate <- 1 - overall_sig_rate
   
-  # avoid zeros by adding a small continuity correction if needed
+  # avoid zeros by adding a small continuity correction (if needed)
   eps <- 0.001
+  
+  # Compute log(OR) [better properties: symmetric around 0]
+  # + ⇒ cluster over‑represented among significant CpGs
+  # - ⇒ under‑represented
   
   crosstab$lor <- with(crosstab, {
     # cluster odds of being significant
@@ -292,27 +365,52 @@ cluster_representation <- function(dset, thresh_gnmwide = 1e-7) {
     log(odds_cluster / odds_overall)
   })
   
-  # Positive lor ⇒ cluster over‑represented among significant CpGs
-  # negative ⇒ under‑represented.
-  
-  ggplot(crosstab,
-         aes(x = lor,
-             y = reorder(cluster, lor),
-             fill = lor > 0)) +
+  # panel 1: log-odds representation
+  cluster_lor <- ggplot(crosstab,
+                        aes(x = lor, y = reorder(cluster, lor), 
+                            fill = lor > 0)) +
     geom_col() +
     geom_vline(xintercept = 0, color = "black") +
-    scale_fill_manual(values = c("TRUE" = "#1b9e77", "FALSE" = "#d95f02"),
+    scale_fill_manual(values = c("TRUE" = "#1b9e77", "FALSE" = "#8B0000"),
                       labels = c("Under", "Over"),
-                      name = "Representation") +
-    labs(
-      x = "Log-odds of being significant (vs overall)",
-      y = "Cluster",
-      title = "Over- and under-representation of clusters among significant CpGs"
-    ) +
+                      name = "Represented") +
+    labs(x = "Log-odds of significant (vs overall)", y = "Cluster",
+         title = paste(ewas, "EWAS")) +
     theme_minimal() +
     theme(legend.position = "bottom")
+  
+  # panel 2: overall counts per cluster (grey bars)
+  cluster_counts <- ggplot(crosstab,
+                           aes(x = n_total, y = reorder(cluster, lor))) +
+    geom_col(fill = "#EDEDED") +
+    labs(x = "Total CpGs per cluster", y = "Cluster") +
+    theme_minimal() +
+    theme(legend.position = "none",
+          axis.title.y = element_blank())
+  
+  # patchwork syntax
+  (cluster_lor | cluster_counts) + plot_layout(widths = c(2, 1))
+ 
 }
 
-# manhattan()
-
-# cluster_representation(dset)
+ewas_plot <- function(dset, ewases, cluster_var = 'p2_cluster', 
+                      thresh_gnmwide = 1e-7, output_file = 'EWAS_cluster.pdf',
+                      ...) {
+  
+  pdf(output_file, width = 12, height = 16)
+  
+  for (ewas in ewases) {
+    p_manhattan <- manhattan(dset, ewas, cluster_var, 
+                             thresh_gnmwide = thresh_gnmwide, ...)
+    
+    p_represent <- cluster_representation(dset, ewas, cluster_var, 
+                                          threshold = thresh_gnmwide)
+    
+    print((p_manhattan / p_represent) + plot_layout(heights = c(1.5, 2)))
+    
+  }
+  
+  dev.off()
+  
+  return(invisible(NULL))
+}

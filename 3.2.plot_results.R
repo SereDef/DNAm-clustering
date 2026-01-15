@@ -8,6 +8,8 @@ data_desc <- "~/MPSR/data/batch_corrected/mega_ComBat.desc"
 input_dir <- "~/MPSR/metadata/clusters"
 output_dir <- "~/MPSR/metadata/plots"
 
+dir.create(output_dir, showWarnings = FALSE)
+
 source("3.0.postprocess_helpers.R")
 
 # Inspect tuning procedure -----------------------------------------------------
@@ -25,7 +27,7 @@ cat(phase2_k)
 tuning_plot(phase1_tuning)
 # phase2_tuning
 
-# Inspect phase-1 clusters -----------------------------------------------------
+# Inspect phase-1 and 2 centroids ----------------------------------------------
 
 phase1_centroids <- readRDS(file.path(input_dir, 'phase1_centroids.rds'))
 
@@ -33,24 +35,36 @@ phase1_centroids <- readRDS(file.path(input_dir, 'phase1_centroids.rds'))
 centroid_plot(get_empirical_pdf(phase1_centroids), # turn list of ECDF into empirical PDF
               output_file = file.path(output_dir, 'phase1_centroids.pdf')) 
 
-# Plot all CPG data, colored by phase-1 cluster
-cpg_data <- bigmemory::attach.big.matrix(data_desc, lockfile = TRUE)
-
-phase1_clusters <- readRDS(file.path(input_dir, 'phase1_clusters.rds'))
-
-cluster_data <- phase1_clusters |> 
-  tidyr::separate(cluster, into = c("range_centile", "median_centile", "cluster"), 
-                  sep  = "\\.")
-
-clusters_plot(cpg_data, cluster_data,
-              output_file = file.path(output_dir, "phase1_cpg_by_cluster.pdf"),
-              fixed_x_range = FALSE)
-  
-# Inspect phase-2 clusters -----------------------------------------------------
-
 phase2_centroids <- readRDS(file.path(input_dir, 'phase2_centroids.rds'))
 
 centroid_plot(get_empirical_pdf(phase2_centroids, type='phase2'),
               output_file = file.path(output_dir, 'phase2_centroids.pdf'))
 
-# plot(table(cl$p2_cluster), col = '#048503', ylab = 'CpG counts')
+# Inspect phase-1 and 2 clusters -----------------------------------------------
+
+cpg_data <- bigmemory::attach.big.matrix(data_desc, lockfile = TRUE)
+
+cluster_data <- readRDS('metadata.rds')
+
+clusters_plot(cpg_data, cluster_data, cluster_var = 'p1_cluster', 
+              output_file = file.path(output_dir, "phase1_cpg_by_cluster.pdf"),
+              fixed_x_range = FALSE)
+
+clusters_plot(cpg_data, cluster_data, cluster_var = 'p2_cluster', 
+              output_file = file.path(output_dir, "phase2_cpg_by_cluster.pdf"),
+              fixed_x_range = TRUE)
+
+# EWAS functional analyses -----------------------------------------------------
+
+sumstat_data <- readRDS('summstats_prenatalrisk.rds')
+
+dset <- merge(sumstat_data, cluster_data, by = "cpg", all.x = TRUE)
+
+rm(cluster_data, sumstat_data)
+
+ewases <- gsub('pvalue_', '', grep('^pvalue_', names(dset), value = TRUE))
+
+ewas_plot(dset, ewases, cluster_var = 'p2_cluster', 
+          thresh_gnmwide = 1e-7, 
+          output_file = file.path(output_dir, 'EWAS_cluster_repr.pdf'))
+
