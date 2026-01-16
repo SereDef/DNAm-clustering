@@ -96,23 +96,23 @@ ss_gest.diabetes <- read_ss_file(
 
 ss_glucose.fasting <- read_ss_file(
   'PACE-Glycemicdysregulation/fastingglucose_EWAS_MRC.txt.gz') |>
-  dplyr::select(cpg = CpG, pvalue_Glucose.fasting = P_FDR)
+  dplyr::select(cpg = CpG, pvalue_Glucose.fasting = P)
 
 ss_insulin.fasting <- read_ss_file(
   'PACE-Glycemicdysregulation/fastinginsulin_EWAS_MRC.txt.gz') |>
-  dplyr::select(cpg = CpG, pvalue_Insulin.fasting = P_FDR)
+  dplyr::select(cpg = CpG, pvalue_Insulin.fasting = P)
 
 ss_glucose <- read_ss_file(
   'PACE-Glycemicdysregulation/glucose_EWAS_MRC.txt.gz') |>
-  dplyr::select(cpg = CpG, pvalue_Glucose = P_FDR)
+  dplyr::select(cpg = CpG, pvalue_Glucose = P)
 
 ss_insulin <- read_ss_file(
   'PACE-Glycemicdysregulation/insulin_EWAS_MRC.txt.gz') |>
-  dplyr::select(cpg = CpG, pvalue_Insulin = P_FDR)
+  dplyr::select(cpg = CpG, pvalue_Insulin = P)
 
 ss_OGTT <- read_ss_file(
   'PACE-Glycemicdysregulation/OGTT_EWAS_MRC.txt.gz') |>
-  dplyr::select(cpg = CpG, pvalue_OGTT = P_FDR)
+  dplyr::select(cpg = CpG, pvalue_OGTT = P)
 
 # Maternal BMI (... what about the cohort specific effects?)
 
@@ -145,15 +145,15 @@ ss_maternalBMI2 <- read_ss_file('PACE-MaternalBMI/OVERorOBESE_cells_1_all1.Rdata
 # exclGenREpic ??? This is also only top hits??
 
 ss_ADHD <- read_ss_file(
-  'PGS-ADHD,ASDandSCZ(Isabelpaper)/adhd_exclGenREpic_all_elena_2024-07-02.RData') |>
+  'PGS-ADHD,ASDandSCZ(Isabelpaper)/adhd_exclGenREpic_elena_2024-07-02.RData') |>
   dplyr::select(cpg = MarkerName, pvalue_ADHD.PGS = P.value)
 
 ss_ASD <- read_ss_file(
-  'PGS-ADHD,ASDandSCZ(Isabelpaper)/asd_exclGenREpic_all_elena_2024-07-02.RData') |>
+  'PGS-ADHD,ASDandSCZ(Isabelpaper)/asd_exclGenREpic_elena_2024-07-02.RData') |>
   dplyr::select(cpg = MarkerName, pvalue_ASD.PGS = P.value)
 
 ss_SCZ <- read_ss_file(
-  'PGS-ADHD,ASDandSCZ(Isabelpaper)/scz_exclGenREpic_all_elena_2024-07-02.RData') |>
+  'PGS-ADHD,ASDandSCZ(Isabelpaper)/scz_exclGenREpic_elena_2024-07-02.RData') |>
   dplyr::select(cpg = MarkerName, pvalue_SCZ.PGS = P.value)
 
 # ------------------------------------------------------------------------------
@@ -197,4 +197,3 @@ annot <- minfi::getAnnotation(IlluminaHumanMethylation450kanno.ilmn12.hg19) |>
 sumstats <- merge(annot, all_ss, by = 'cpg', all.x = TRUE)
 
 saveRDS(sumstats, output_file)
-

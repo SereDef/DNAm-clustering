@@ -12,7 +12,7 @@ k_candidates = 10:30 # K values to try
 feature_split = 0.7  # Proportion of stage-1-centroids to use for tuning at each iteration
 n_iterations = 10   # Number of tuning iterations 
 
-input_dir <- "~/MPSR/metadata/clusters"
+input_dir <- output_dir <- "~/MPSR/metadata/clusters"
 
 ecdf_list <- readRDS(file.path(input_dir, 'stage1_centroids.rds'))
 
@@ -37,8 +37,7 @@ k_hat <- as.integer(names(which.max(k_stability)))
 if (length(k_hat) > 1) k_hat <- min(k_hat)
 
 # ==============================================================================
-saveRDS(k_stability, file.path(input_dir, 'stage2_tuning.rds'))
+saveRDS(k_stability, file.path(output_dir, 'stage2_tuning.rds'))
 
 final_cluster <- fit_epmeas(ecdf_list, k = k_hat, centile = 'stage2', 
-                            output_folder = input_dir)
-
+                            output_folder = output_dir)

@@ -34,9 +34,6 @@ stage1_clusters <- purrr::map_dfr(
 saveRDS(stage1_clusters,
         file.path(output_dir, 'stage1_clusters.rds'))
 
-# Remove individual files
-file.remove(stage1_cluster_files)
-
 # Identify the tuning files, and combine them ----------------------------------
 
 stage1_tune_files <- list.files(
@@ -66,9 +63,6 @@ stage1_tuning <- purrr::map_dfr(
 saveRDS(stage1_tuning,
         file.path(output_dir, 'stage1_tuning.rds'))
 
-# Remove individual files
-file.remove(stage1_tune_files)
-
 # Centroids --------------------------------------------------------------------
 
 stage1_centroid_files <- list.files(
@@ -93,15 +87,22 @@ ecdf_list <- stage1_centroid_files |>
   # Flatten
   purrr::list_c() 
 
+length(ecdf_list)
+
 # save single file
 saveRDS(ecdf_list,
         file.path(output_dir, 'stage1_centroids.rds'))
 
-# Remove individual files
-file.remove(stage1_centroid_files)
-
 # ==============================================================================
 # Also merge all the log files
 
-system('cat 2.1.logs/* > 2.1.log')
+system('cat $(ls 2.1.logs/2.1_log* | sort -V) > 2.1.log')
+
+# ==============================================================================
+# Remove multiple files 
+
+file.remove(stage1_tune_files)
+file.remove(stage1_cluster_files)
+file.remove(stage1_centroid_files)
+
 system('rm -r 2.1.logs')
