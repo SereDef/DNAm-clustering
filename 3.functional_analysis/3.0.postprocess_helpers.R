@@ -80,8 +80,9 @@ tuning_plot <- function(tuning_df,
     geom_line(linewidth = 0.3, alpha = 0.5) +
     geom_point(data = ~ subset(.x, k_selected), size  = 2.5, 
                aes(shape = .data[[shape_by]])) +
-    scale_shape_manual(name = centile_names[1], values = 0:20) +
+    scale_shape_manual(name = centile_names[1], values = 1:20) +
     scale_color_manual(name = centile_names[2], values = colors) +
+    theme_minimal() +
     guides(color = guide_legend(ncol = 2),   # 2-column color legend
            shape = guide_legend(ncol = 2))
   
@@ -96,8 +97,12 @@ smooth_pdf <- function(y, k = 1) {
   # simple centred moving average
   # k must be odd; k = 1 means no smoothing
   if (k <= 1) return(y)
+  
   f <- rep(1 / k, k)
-  stats::filter(y, f, sides = 2, circular = FALSE) |> as.numeric()
+  smooth_y <- stats::filter(y, filter = f, sides = 2, circular = FALSE) |> 
+    as.numeric()
+ 
+  return(smooth_y) 
 }
 
 # Convert list of ECDF (empirical cumulative distribution functions) into empirical 
@@ -112,8 +117,8 @@ get_empirical_pdf <- function(ecdf_list, x_range = c(0,1), n_samples = 1000,
                                                          'cluster')) {
   
   # Check effective range
-  obs_x_range <- range(sapply(ecdf_list, function(f) range(f)))
-  message("Observed x range: ", paste(obs_x_range, collapse=' - '))
+  # obs_x_range <- range(sapply(ecdf_list, function(f) range(f)))
+  # message("Observed x range: ", paste(obs_x_range, collapse=' - '))
   
   # Construct Lebesgue grid
   x_seq <- seq(x_range[1], x_range[2], length.out = n_samples+1)
@@ -131,16 +136,23 @@ get_empirical_pdf <- function(ecdf_list, x_range = c(0,1), n_samples = 1000,
     # optional smoothing
     pdf_vals <- smooth_pdf(pdf_vals_raw, k = smoothing)
     
+    # --- drop NAs & 0s don't get plotted (and keep x aligned) ---
+    obs <- !is.na(pdf_vals) & pdf_vals > 0.00
+    
+    x_pdf <- x_pdf[obs]
+    pdf_vals <- pdf_vals[obs]
+    
     if (type == 'stage1') {
       # Also extract the cluster metadata (centile groups)
       cluster_name_decomp <- strsplit(names(ecdf_list)[.x], "\\.")[[1]] |> as.numeric()
 
-      meta_df <- as.list(
-        as.numeric(cluster_name_decomp[seq_along(cluster_name_structure)]))
+      meta_df <- as.data.frame(as.list(as.numeric(
+        cluster_name_decomp[seq_along(cluster_name_structure)])),
+        stringsAsFactors = FALSE)
       
-      names(meta_df) <- centile_metrics
+      names(meta_df) <- cluster_name_structure
       
-      return(data.frame(x = x_pdf, y = pdf_vals, !!!meta_df))
+      return(data.frame(x = x_pdf, y = pdf_vals,  meta_df, check.names = FALSE))
 
     } else {
 
@@ -153,7 +165,7 @@ get_empirical_pdf <- function(ecdf_list, x_range = c(0,1), n_samples = 1000,
 }
 
 
-centroid_plot <- function(pdf_data, offset = 1.05,
+centroid_plot <- function(pdf_data, offset = 1.02,
                           output_file = 'centroids_by_range_centile.pdf') {
 
   # Plot in pdf file
@@ -167,19 +179,19 @@ centroid_plot <- function(pdf_data, offset = 1.05,
       subset_data <- filter(pdf_data, range_group == .x)
       
       # pre-compute within-range_group max y to scale offsets
-      offset_step <- max(subset_data$y) * 1.05
+      offset_step <- max(subset_data$y) * offset
       
       subset_data$y_offset <- (subset_data$median_group - 1L) * offset_step
       subset_data$new_y <- subset_data$y + subset_data$y_offset
       
       p <- ggplot(subset_data, aes(x = x, y = new_y, color = factor(cluster), 
                                    group = interaction(cluster, median_group))) +
-        geom_line(linewidth = 0.4, alpha = 0.7) +
+        geom_line(linewidth = 0.5, alpha = 0.6) +
         scale_color_manual(name = "Cluster", values = colors) +
         scale_y_continuous(name = "Density (offset by median group)",
                            breaks = subset_data$y_offset,
                            labels = subset_data$median_group) +
-        labs(title = .x, x = "Methylation") +
+        labs(title = paste('Range centile:', .x), x = "Methylation") +
         theme_minimal() +
         theme(legend.position = "bottom")
       
@@ -189,7 +201,7 @@ centroid_plot <- function(pdf_data, offset = 1.05,
   } else {
      
     p <- ggplot(pdf_data, aes(x = x, y = y, color = factor(cluster))) +
-      geom_line(linewidth = 0.5, alpha = 0.7) +
+      geom_line(linewidth = 0.5, alpha = 0.6) +
       scale_color_manual(name = "Cluster", values = colors) +
       labs(title = 'Final clusters', x = "Methylation", y = "Density") +
       theme_minimal() +
@@ -219,6 +231,10 @@ cpg_subset_densities <- function(cluster_subset, cpg_data, fixed_x_range = TRUE,
     n_subset <- as.integer(length(cpg_idx) * random_subset)
     set.seed(3108)
     cpg_idx <- sample(cpg_idx, n_subset)
+  }
+  
+  if (!length(cpg_idx)) {
+    stop("No CpGs matched for: ", title)
   }
   
   # Subset valid data only + get colors
@@ -274,7 +290,7 @@ clusters_plot <- function(cpg_data, cluster_data, cluster_var = 'p1_cluster',
       cluster_size <- nrow(cluster_subset)
       
       cpg_subset_densities(cluster_subset, cpg_data, fixed_x_range = TRUE, 
-                           c
+                           random_subset = random_subset,
                            title = sprintf('Cluster: %d (n = %d)', cluster, cluster_size),
                            color = cluster)
     }
@@ -283,7 +299,14 @@ clusters_plot <- function(cpg_data, cluster_data, cluster_var = 'p1_cluster',
 
     # TODO: this assumes median and range are used for grouping
     #       & that range has 20 levels
-
+    # split this to get the centiles!!
+    
+    cluster_name_decomp <- do.call(rbind, strsplit(cluster_data$p1_cluster, "\\."))
+    
+    cluster_data$median_centile <- cluster_name_decomp[, 1]
+    cluster_data$range_centile <- cluster_name_decomp[, 2]
+    cluster_data$cluster <- cluster_name_decomp[, 3]
+    
     for (median_g in unique(cluster_data$median_centile)) {
       
       par(mfrow = c(4, 5), mar = c(1, 1, 1, 1), oma = c(0, 0, 2, 0), 

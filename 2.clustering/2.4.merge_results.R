@@ -5,7 +5,7 @@ use_library = '/home/s.defina/R/x86_64-pc-linux-gnu-library/4.4'
 .libPaths(use_library)
 
 input_dir <- "~/MPSR/metadata/clusters"
-output_file <- "../metadata/CpG_metadata.rds"
+output_file <- "~/MPSR/DNAm-clustering/metadata/CpG_metadata.rds"
 
 stage2_tuning <- readRDS(file.path(input_dir, 'stage2_tuning.rds'))
 
@@ -16,9 +16,9 @@ stage2_k <- names(which.max(stage2_tuning))
 stage1_clusters <- readRDS(file.path(input_dir, 'stage1_clusters.rds'))
 
 # Meta-data matrix
-meta <- readRDS(output_file)
-
-metadata <- as.data.frame(meta) |> tibble::rownames_to_column(var = "cpg")
+metadata <- readRDS(output_file)|> 
+  as.data.frame() |> 
+  tibble::rownames_to_column(var = "cpg")
 
 metadata <- merge(metadata, stage1_clusters, by = "cpg")
 
@@ -29,9 +29,12 @@ stage2_clusters <- readRDS(file.path(input_dir,
   dplyr::rename(cluster = V1, p2_cluster = V2)
 
 metadata <- merge(metadata, stage2_clusters, by = "cluster") |>
-  dplyr::select(cpg, # centile_bin = centile_bins, 
-                range_cpg = range_mega, median_cpg = median_mega,
-                p1_cluster = cluster, p2_cluster)
+  dplyr::select(
+    cpg,
+    p1_cluster = cluster,
+    p2_cluster,
+    matches("^(mean|median|range|variance|skewness|kurtosis)_")
+  )
 
 # Save final metadata file =====================================================
 
