@@ -7,7 +7,7 @@ use_library = '/home/s.defina/R/x86_64-pc-linux-gnu-library/4.4'
 sumstats_dir <- "~/MPSR/funct_analysis/PrentalRiskFactors_sumstats/"
 output_file <- "../metadata/summstats_prenatalrisk.rds"
 
-# What i am working with you guys:
+# What i am working with: ------------------------------------------------------
 # 
 # ├── (E)PACE-HypertensiveDisorders
 # │   ├── GestHTEandPE_CpGs.xlsx
@@ -51,16 +51,24 @@ output_file <- "../metadata/summstats_prenatalrisk.rds"
 # └── PGS-ADHD,ASDandSCZ(Isabelpaper)
 #     ├── adhd_all_elena_2024-07-02.RData
 #     ├── adhd_exclGenREpic_elena_2024-07-02.RData
+#     ├── adhd-gest-METAANALYSIS1.info
+#     ├── adhd-gest-METAANALYSIS1.TBL
 #     ├── asd_all_elena_2024-07-02.RData
 #     ├── asd_exclGenREpic_elena_2024-07-02.RData
+#     ├── asd-gest-METAANALYSIS1.info
+#     ├── asd-gest-METAANALYSIS1.TBL
 #     ├── scz_all_elena_2024-07-02.RData
-#     └── scz_exclGenREpic_elena_2024-07-02.RData
+#     ├── scz_exclGenREpic_elena_2024-07-02.RData
+#     ├── scz-gest-METAANALYSIS1.info
+#     └── scz-gest-METAANALYSIS1.TBL
+
+# ------------------------------------------------------------------------------
 
 read_ss_file <- function(file, dir = sumstats_dir) {
   
   if (grepl('.xlsx$', file)) {
     ss_raw <- readxl::read_excel(file.path(dir, file))
-  } else if (grepl('.csv$|.txt$|.gz$', file)) {
+  } else if (grepl('.csv$|.txt$|.gz$|.TBL$', file)) {
     ss_raw <- data.table::fread(file.path(dir, file))
   } else if (grepl('.Rdata$|.RData$', file)) {
     tmp_env <- new.env(parent = emptyenv())
@@ -88,9 +96,9 @@ ss_gest.age <- read_ss_file(
   'PACE-Gestationalage/GestationalageEWAS_450kmeta-analysisresult.xlsx') |>
   dplyr::select(cpg = CpGID, pvalue_Gestational.age = PVALUE_FE)
 
-ss_gest.diabetes <- read_ss_file(
-  'PACE-Gestationaldiabetes/PACE_GDM_Model2_NomSig.csv') |>
-  dplyr::select(cpg = MarkerName, pvalue_Gestational.diabetes = P_value)
+# ss_gest.diabetes <- read_ss_file( ## TODO: find out where the full set is
+#   'PACE-Gestationaldiabetes/PACE_GDM_Model2_NomSig.csv') |> 
+#   dplyr::select(cpg = MarkerName, pvalue_Gestational.diabetes = P_value)
 
 # Glycemic dysregulation
 
@@ -124,14 +132,20 @@ ss_maternalBMI2 <- read_ss_file('PACE-MaternalBMI/OVERorOBESE_cells_1_all1.Rdata
 
 # Maternal education
 
-# There are too many models here... picking one? Skip for now  
+# There are too many models here... which one?
 # f <- 'PACE-Maternaleducation/mateduewas_summarystatistics.zip'
-# files <- unzip((file.path(sumstats_dir, f)), list = TRUE)
-# for file in files$Name read_ss_file()?
+# files <- unzip((file.path(sumstats_dir, f)), list = TRUE) 
+# > files$Name
+# [1] "mateduewas_summarystatistics_Model1_Adolescence_All.csv"         "mateduewas_summarystatistics_Model1_Childhood_All.csv"          
+# [3] "mateduewas_summarystatistics_Model1_CordBlood_AllAncestries.csv" "mateduewas_summarystatistics_Model1_CordBlood_EurAncestries.csv"
+# [5] "mateduewas_summarystatistics_Model2_Adolescence_All.csv"         "mateduewas_summarystatistics_Model2_Childhood_All.csv"          
+# [7] "mateduewas_summarystatistics_Model2_CordBlood_AllAncestries.csv" "mateduewas_summarystatistics_Model2_CordBlood_EurAncestries.csv"
+# [9] "mateduewas_summarystatistics_Model3_Adolescence_All.csv"         "mateduewas_summarystatistics_Model3_Childhood_All.csv" 
 
 # Parental age 
 
-# Only has a subset?? EPIC and sexadj models? ...leave them for now
+# There are too many models here... which one? EPIC and sexadj models?
+
 # ss_maternalage <- read_ss_file(
 #   'PACE-Maternal&paternalage/DSF2_maternal_newborn_main.csv') |>
 #   dplyr::select(cpg = CpG, pvalue_Maternal.age = pval_FDR)
@@ -140,21 +154,19 @@ ss_maternalBMI2 <- read_ss_file('PACE-MaternalBMI/OVERorOBESE_cells_1_all1.Rdata
 #   'PACE-Maternal&paternalage/DSF9_paternal_newborn_main.csv') |>
 #   dplyr::select(cpg = CpG, pvalue_Paternal.age = pval_FDR)
 
-# Mental heath
-
-# exclGenREpic ??? This is also only top hits??
+# Mental heath PGSs
 
 ss_ADHD <- read_ss_file(
-  'PGS-ADHD,ASDandSCZ(Isabelpaper)/adhd_exclGenREpic_elena_2024-07-02.RData') |>
-  dplyr::select(cpg = MarkerName, pvalue_ADHD.PGS = P.value)
+  'PGS-ADHD,ASDandSCZ(Isabelpaper)/adhd-gest-METAANALYSIS1.TBL') |>
+  dplyr::select(cpg = MarkerName, pvalue_ADHD.PGS = `P-value`)
 
 ss_ASD <- read_ss_file(
-  'PGS-ADHD,ASDandSCZ(Isabelpaper)/asd_exclGenREpic_elena_2024-07-02.RData') |>
-  dplyr::select(cpg = MarkerName, pvalue_ASD.PGS = P.value)
+  'PGS-ADHD,ASDandSCZ(Isabelpaper)/asd-gest-METAANALYSIS1.TBL') |>
+  dplyr::select(cpg = MarkerName, pvalue_ASD.PGS = `P-value`)
 
 ss_SCZ <- read_ss_file(
-  'PGS-ADHD,ASDandSCZ(Isabelpaper)/scz_exclGenREpic_elena_2024-07-02.RData') |>
-  dplyr::select(cpg = MarkerName, pvalue_SCZ.PGS = P.value)
+  'PGS-ADHD,ASDandSCZ(Isabelpaper)/scz-gest-METAANALYSIS1.TBL') |>
+  dplyr::select(cpg = MarkerName, pvalue_SCZ.PGS = `P-value`)
 
 # ------------------------------------------------------------------------------
 merge_and_rm <- function(df_names, ..., env = parent.frame()) {
