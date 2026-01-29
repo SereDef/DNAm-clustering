@@ -5,6 +5,8 @@ use_library = '/home/s.defina/R/x86_64-pc-linux-gnu-library/4.4'
 .libPaths(use_library)
 
 data_desc <- "~/MPSR/data/batch_corrected/mega_ComBat.desc"
+data_info <- "~/MPSR/data/clean/mega_info.RData"
+
 metadata_dir <- "~/MPSR/DNAm-clustering/metadata"
 input_dir <- "~/MPSR/metadata/clusters"
 output_dir <- "~/MPSR/DNAm-clustering/plots"
@@ -63,7 +65,7 @@ sumstat_data <- readRDS(file.path(metadata_dir, 'summstats_prenatalrisk.rds'))
 
 dset <- merge(sumstat_data, cluster_data, by = "cpg", all.x = TRUE)
 
-rm(cluster_data, sumstat_data)
+rm(sumstat_data)
 
 ewases <- gsub('pvalue_', '', grep('^pvalue_', names(dset), value = TRUE))
 
@@ -71,3 +73,11 @@ ewas_plot(dset, ewases, cluster_var = 'p2_cluster',
           thresh_gnmwide = 1e-7, 
           output_file = file.path(output_dir, 'EWAS_cluster_repr.pdf'))
 
+# Check for cohort / array differences -----------------------------------------
+
+load(data_info) # args, plate_info
+
+stopifnot(identical(plate_info$Sample_ID, colnames(cpg_data)))
+
+cpg_sources_plot(cpg_data, cluster_data, args, random_subset = 10,
+                 file.path(output_dir, 'stage2_cpg_by_cluster_source.pdf'))

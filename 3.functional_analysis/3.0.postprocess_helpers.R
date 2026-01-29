@@ -333,6 +333,99 @@ clusters_plot <- function(cpg_data, cluster_data, cluster_var = 'p1_cluster',
   return(invisible(NULL))
 }
 
+cpg_sources_plot <- function(cpg_data, cluster_data, args, random_subset = 10,
+                             output_file = "ecdf_by_cluster_by_source.pdf") {
+  
+  source_idx <- lapply(seq_len(nrow(args)), function(k) args$start[k]:args$end[k])
+  
+  source_colors <- c('blue', 'orange', 'purple', 'black')
+  source_names <- c(paste(args$dataset, args$array, sep = ' ~ '), 'all')
+  
+  n_clusters <- max(as.numeric(cluster_data$p2_cluster))
+  
+  pdf(file.path(output_dir, 'stage2_cpg_by_cluster_source.pdf'), width = 12, height = 6.5)
+  
+  for (cluster in 1:n_clusters) {
+    
+    cluster_subset <- cluster_data |> filter(p2_cluster == cluster)
+    
+    cpg_idx <- match(cluster_subset$cpg, rownames(cpg_data))
+    cpg_idx <- cpg_idx[!is.na(cpg_idx)] # should not be any missing matches but just in case
+    
+    if (!is.null(random_subset)) {
+      set.seed(3108)
+      cpg_idx <- sample(cpg_idx, random_subset)
+    }
+    
+    # Subset valid data only + get colors
+    cpg_data_subset <- cpg_data[cpg_idx, ]
+    
+    op <- par(mfrow = c(2, 5),
+              mar = c(0, 0, 0, 0),  # smaller margins
+              oma = c(7, 5, 7, 5))  # outer margins for global title
+    
+    for (i_cpg in seq_len(random_subset)) {
+      
+      cpg <- cpg_data_subset[i_cpg, ]
+      
+      # densities per source group 
+      cpg_split_ecdf <- lapply(source_idx, function(idx) ecdf(cpg[idx]))
+      cpg_split_ecdf[['all']] <- ecdf(cpg)
+      
+      # cpg_split_density <- lapply(source_idx, function(idx) {
+      #   density(cpg[idx], bw = "SJ", n = 1000)
+      # })
+      
+      x_grid <- seq(0, 1, length.out = 1000)
+      
+      # evaluate on grid
+      cpg_ecdf_vals <- lapply(cpg_split_ecdf, function(cpg_fun) cpg_fun(x_grid))
+      
+      # y_range <- c(0, max(sapply(cpg_split_density, function(d) max(d$y)), na.rm = TRUE))
+      # x_range <- c(0, 1)
+      
+      y_range <- c(0, 1)
+      x_range <- c(0, 1)
+      
+      plot(0, type = "n", xlim = x_range, ylim = y_range,
+           xlab = "", ylab = "", main = "",
+           axes = FALSE)
+      # xlab = "Methylation", ylab = "Cumulative probability")
+      
+      for (i in seq_along(cpg_ecdf_vals)) {
+        lines(x_grid, cpg_ecdf_vals[[i]],
+              col = scales::alpha(source_colors[i], 0.6), lwd = 0.8)
+      }
+      # for (i in seq_along(cpg_split_density)) {
+      #   lines(cpg_split_density[[i]], col = scales::alpha(source_colors[i], 0.3), lwd = 0.5)
+      # }
+      # panel position
+      row_idx <- ceiling(i_cpg / 5)
+      col_idx <- i_cpg - (row_idx - 1) * 5
+      
+      # y-axis only on leftmost column
+      if (col_idx == 1) axis(side = 2)
+      
+      # x-axis only on bottom row
+      if (row_idx == 2) axis(side = 1)
+      
+    } 
+    
+    par(xpd = NA)
+    
+    ## General title (top center)
+    mtext(paste("Random subset from cluster", cluster),
+          side = 3, line = 0, outer = TRUE, cex = 1.2)
+    
+    legend(x = -3, y = -0.15, xpd = NA,
+           legend = source_names,
+           col    = scales::alpha(source_colors, 0.8),
+           lwd = 2, bty = "n", ncol = 4, cex = 1.2)
+  }
+  dev.off()
+    
+}
+
 # ==============================================================================
 # --- Plot cluster representation in EWAS results ---
 # ==============================================================================
