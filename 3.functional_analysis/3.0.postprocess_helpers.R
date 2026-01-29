@@ -337,6 +337,76 @@ clusters_plot <- function(cpg_data, cluster_data, cluster_var = 'p1_cluster',
 # --- Plot cluster representation in EWAS results ---
 # ==============================================================================
 
+compute_lor <- function(dset, ewas, cluster_var = 'p2_cluster', 
+                        threshold = 1e-7) {
+  
+  # Pre-process p-value information ============================================
+  ewas_name <- gsub('\\.', ' ', ewas)
+  dset$signif <- dset[, paste('pvalue', ewas, sep="_")] < threshold
+  # Ensure table get all levels always
+  dset$signif <- factor(dset$signif, levels = c(FALSE, TRUE))
+  
+  # Compute log(OR) for comparison =============================================
+  # [better properties: symmetric around 0]
+  # + ⇒ cluster over‑represented among significant CpGs
+  # - ⇒ under‑represented
+  
+  # Cross tab: rows = clusters, columns = FALSE/TRUE (significant)
+  crosstab <- as.data.frame.matrix(table(dset[, cluster_var], dset$signif))
+  names(crosstab) <- c("n_nonsig", "n_sig")
+  crosstab$cluster <- rownames(crosstab)
+  
+  # total per cluster
+  crosstab$n_total <- crosstab$n_sig + crosstab$n_nonsig
+  
+  # avoid zeros by adding a small continuity correction (if needed)
+  eps <- 1e-4
+  
+  # Display log(OR) of cluster vs. the rest (not average)
+  crosstab$lor <- with(crosstab, {
+    if (sum(n_sig) == 0) {
+      # For no significant CpGs, set to log(OR) to 0
+      0L
+    } else {
+      # # cluster odds of being significant vs. overall odds
+      # odds_cluster <- (n_sig + eps) / (n_nonsig + eps)
+      # odds_overall <- (sum(n_sig) + eps) / (sum(n_nonsig) + eps)
+      # log(odds_cluster / odds_overall)
+      
+      other_sig <- sum(n_sig) - n_sig
+      other_nonsig <- sum(n_nonsig) - n_nonsig
+      
+      # (sig in cluster * non-sig other) / (non-sig in cluster * other sign)
+      log(((n_sig + eps) * (other_nonsig + eps)) / 
+          ((n_nonsig + eps) * (other_sig + eps)))
+    }
+
+  })
+  
+  # Efficient tests: cluster vs rest, 2x2, vectorized
+  
+  crosstab$lor_pval <- with(crosstab, {
+    
+    other_sig <- sum(n_sig) - n_sig
+    other_nonsig <- sum(n_nonsig) - n_nonsig
+    
+    se <- sqrt(1 / (n_sig + eps) + 
+               1 / (n_nonsig + eps) +
+               1 / (other_sig + eps) + 
+               1 / (other_nonsig + eps))
+    z <- lor / se
+    
+    # P value
+    2 * pnorm(-abs(z))
+    
+  })
+  
+  # Multiple testing correction
+  crosstab$lor_pfdr <- p.adjust(crosstab$lor_pval, method = "BH")
+  
+  return(crosstab)
+}
+
 manhattan <- function(dset, ewas, cluster_var = 'p2_cluster', 
                       thresh_gnmwide = 1e-7,
                       thresh_suggest = 1e-5, 
@@ -402,52 +472,25 @@ manhattan <- function(dset, ewas, cluster_var = 'p2_cluster',
 cluster_representation <- function(dset, ewas, cluster_var = 'p2_cluster', 
                                    threshold = 1e-7) {
   
-  # Pre-process p-value information ============================================
-  ewas_name <- gsub('\\.', ' ', ewas)
-  dset$signif <- dset[, paste('pvalue', ewas, sep="_")] < threshold
-  # Ensure table get all levels always
-  dset$signif <- factor(dset$signif, levels = c(FALSE, TRUE))
   
-  # Compute log(OR) for comparison =============================================
-  # Cross tab for comparison: rows = clusters, columns = FALSE/TRUE (significant)
-  crosstab <- as.data.frame.matrix(table(dset[, cluster_var], dset$signif))
-  names(crosstab) <- c("n_nonsig", "n_sig")
-  crosstab$cluster <- rownames(crosstab)
+  crosstab <- compute_lor(dset, ewas, cluster_var = 'p2_cluster', 
+                          threshold = 1e-7)
   
-  # total per cluster
-  crosstab$n_total <- crosstab$n_sig + crosstab$n_nonsig
-  
-  # overall rates
-  overall_sig_rate <- sum(crosstab$n_sig) / sum(crosstab$n_total)
-  overall_nonsig_rate <- 1 - overall_sig_rate
-  
-  # avoid zeros by adding a small continuity correction (if needed)
-  eps <- 0.001
-  
-  # Compute log(OR) [better properties: symmetric around 0]
-  # + ⇒ cluster over‑represented among significant CpGs
-  # - ⇒ under‑represented
-  
-  crosstab$lor <- with(crosstab, {
-    # cluster odds of being significant
-    odds_cluster  <- (n_sig + eps) / (n_nonsig + eps)
-    # overall odds
-    total_sig <- sum(n_sig)
-    total_nonsig  <- sum(n_nonsig)
-    odds_overall  <- (total_sig + eps) / (total_nonsig + eps)
-    log(odds_cluster / odds_overall)
-  })
+  # label with * if significant
+  crosstab$cluster_label <- ifelse(crosstab$lor_pfdr < 0.050,
+                                   paste0(crosstab$cluster, "*"),
+                                   crosstab$cluster)
   
   # panel 1: log-odds representation
   cluster_lor <- ggplot(crosstab,
-                        aes(x = lor, y = reorder(cluster, lor), 
+                        aes(x = lor, y = reorder(cluster_label, lor), 
                             fill = lor > 0)) +
     geom_col() +
     geom_vline(xintercept = 0, color = "black") +
     scale_fill_manual(values = c("TRUE" = "#1b9e77", "FALSE" = "#8B0000"),
                       labels = c("Under", "Over"),
                       name = "Represented") +
-    labs(x = "Log-odds of significant (vs overall)", y = "Cluster",
+    labs(x = "Log-odds of significant (vs other)", y = "Cluster",
          title = paste(ewas, "EWAS")) +
     theme_minimal() +
     theme(legend.position = "bottom")
